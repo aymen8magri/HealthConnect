@@ -1,3 +1,5 @@
+
+
 // SUPPRIMEZ ce bloc plugins. Il est déjà défini dans le build.gradle.kts racine.
 /*
 plugins {
@@ -12,6 +14,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    alias(libs.plugins.compose.compiler)
+
+
 }
 
 
@@ -47,9 +52,8 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
-    }
+
+
 
     // DÉPLACEZ le bloc kotlin ici, à l'intérieur de android { ... }
     kotlinOptions {

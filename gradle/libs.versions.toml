@@ -1,6 +1,6 @@
 [versions]
 agp = "8.2.2"  # Stable avec Compose 2024.09.00
-kotlin = "1.9.25"
+kotlin = "2.0.0"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -44,3 +44,4 @@ androidx-compose-ui-tooling-test = { group = "androidx.compose.ui", name = "ui-t
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
