@@ -1,7 +1,19 @@
+// SUPPRIMEZ ce bloc plugins. Il est déjà défini dans le build.gradle.kts racine.
+/*
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android) version "2.0.0"  apply false
+    id("com.google.gms.google-services") version "4.4.4" apply false
+}
+*/
+
+// AJOUTEZ ce bloc "plugins" qui APPLIQUE les plugins au lieu de les définir.
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.gms.google-services")
 }
+
 
 android {
     namespace = "com.example.healthconnect"
@@ -30,16 +42,27 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+
+
     buildFeatures {
         compose = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
     }
+
+    // DÉPLACEZ le bloc kotlin ici, à l'intérieur de android { ... }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
+
+// SUPPRIMEZ ce bloc de l'extérieur.
+/*
+kotlin {
+    jvmToolchain(11) 
+}
+*/
 
 dependencies {
     // Core
@@ -69,4 +92,18 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.tooling.test)
+
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
+
+    // AJOUTEZ CETTE LIGNE - C'est une dépendance de base souvent nécessaire
+    implementation("com.google.firebase:firebase-analytics")
+
+    // --- DÉPENDANCES FIREBASE AJOUTÉES ---
+    // Pour l'authentification (connexion, inscription)
+    implementation("com.google.firebase:firebase-auth")
+
+    // Pour la base de données Firestore (stockage des données)
+    implementation("com.google.firebase:firebase-firestore")
 }
+

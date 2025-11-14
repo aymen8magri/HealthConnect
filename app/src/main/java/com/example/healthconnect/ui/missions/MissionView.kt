@@ -1,4 +1,4 @@
-package com.example.healthconnect.ui.screens
+package com.example.healthconnect.ui.missions
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn

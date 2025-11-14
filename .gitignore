@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Firebase configuration file - DO NOT PUSH
+/app/google-services.json
+    

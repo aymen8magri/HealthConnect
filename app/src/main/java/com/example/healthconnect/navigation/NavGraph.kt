@@ -5,11 +5,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.healthconnect.ui.screens.HomeScreen
-import com.example.healthconnect.ui.screens.MissionsScreen  // ← NOUVEAU
-import com.example.healthconnect.ui.screens.ChatScreen  // ← NOUVEAU
-import com.example.healthconnect.ui.screens.TachesScreen  // ← NOUVEAU
-import com.example.healthconnect.ui.screens.ProfileScreen
+import com.example.healthconnect.ui.Home.HomeScreen
+import com.example.healthconnect.ui.missions.MissionsScreen  // ← NOUVEAU
+import com.example.healthconnect.ui.chatBot.ChatScreen  // ← NOUVEAU
+import com.example.healthconnect.ui.Tasks.TachesScreen  // ← NOUVEAU
+import com.example.healthconnect.ui.Profile.ProfileScreen
 
 @Composable
 fun NavGraph(navController: NavHostController = rememberNavController()) {
