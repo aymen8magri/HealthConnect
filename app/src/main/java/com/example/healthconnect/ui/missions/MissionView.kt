@@ -1,205 +1,329 @@
 package com.example.healthconnect.ui.missions
 
-// ... tous vos imports existants
-import androidx.compose.foundation.Image // <-- Import nécessaire
-import androidx.compose.foundation.background // <-- Import nécessaire
-import androidx.compose.foundation.layout.* // <-- Import nécessaire
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape // <-- Import nécessaire
-import androidx.compose.material.icons.Icons // <-- Import nécessaire
-import androidx.compose.material.icons.filled.LocationOn // <-- Import nécessaire
-import androidx.compose.material3.* // <-- Import nécessaire
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment // <-- Import nécessaire
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip // <-- Import nécessaire
-import androidx.compose.ui.graphics.Color // <-- Import nécessaire
-import androidx.compose.ui.layout.ContentScale // <-- Import nécessaire
-import androidx.compose.ui.res.painterResource // <-- Import nécessaire
-import androidx.compose.ui.text.font.FontWeight // <-- Import nécessaire
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // <-- Import nécessaire
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.healthconnect.data.mission.Mission
 import com.example.healthconnect.data.mission.MissionStatus
-import coil.compose.AsyncImage // <-- 1. IMPORTEZ AsyncImage DE COIL
-import androidx.compose.material.icons.outlined.DateRange // <-- Import nécessaire
-import androidx.compose.material.icons.filled.Schedule // <-- Import nécessaire pour l'horloge
-import androidx.compose.ui.graphics.vector.ImageVector // <-- Import nécessaire
-@Composable
-fun MissionsView(navController: NavHostController,
-                 viewModel: MissionViewModel = hiltViewModel()
-) {
-    val missions by viewModel.missions.collectAsState()
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
 
-        items(missions) { mission ->
-            // Maintenant, cet appel est valide car la fonction est définie plus bas
-            MissionCard(mission)
-            Spacer(modifier = Modifier.height(12.dp))
+// --- La vue principale, avec une nouvelle couleur de fond ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MissionsView(
+    navController: NavHostController,
+    viewModel: MissionViewModel = hiltViewModel(),
+    onMissionClick: (String) -> Unit
+) {
+    val missions by viewModel.filteredMissions.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedStatus by viewModel.statusFilter.collectAsState()
+    val (showFilterMenu, setShowFilterMenu) = remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            MissionsTopBar(missionCount = missions.size)
+        },
+        // Une couleur de fond douce pour tout l'écran
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // --- La barre de recherche est maintenant sur un fond coloré ---
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF00897B))
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            ) {
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChange,
+                    onFilterClick = { setShowFilterMenu(true) },
+                    selectedStatus = selectedStatus,
+                    showMenu = showFilterMenu,
+                    onDismissMenu = { setShowFilterMenu(false) },
+                    onStatusSelected = { status ->
+                        viewModel.onStatusFilterChange(status)
+                        setShowFilterMenu(false)
+                    }
+                )
+            }
+
+            // --- Liste des missions avec un espacement ---
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(missions) { mission ->
+                    MissionCard(
+                        mission = mission,
+                        onClick = { onMissionClick(mission.id) }
+                    )
+                }
+            }
         }
     }
 }
 
 
-// --- REMPLACEZ L'ANCIENNE MissionCard PAR CELLE-CI ---
+// --- La TopAppBar, plus minimaliste ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MissionCard(mission: Mission) {
+fun MissionsTopBar(missionCount: Int) {
+    TopAppBar(
+        title = { Text("Missions", fontWeight = FontWeight.Bold) },
+        actions = {
+            // Le compteur est maintenant plus subtil
+            Text(
+                text = "$missionCount trouvées",
+                modifier = Modifier.padding(end = 16.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            // Fond de la TopAppBar qui correspond à celui de l'écran
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    )
+}
+
+
+// --- La barre de recherche, avec un design plus moderne ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onFilterClick: () -> Unit,
+    selectedStatus: MissionStatus?,
+    showMenu: Boolean,
+    onDismissMenu: () -> Unit,
+    onStatusSelected: (MissionStatus?) -> Unit
+) {
+    Box {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Rechercher des missions...") },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = "Icône de recherche", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            },
+            trailingIcon = {
+                BadgedBox(
+                    badge = {
+                        if (selectedStatus != null) {
+                            Badge(containerColor = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Tune,
+                        contentDescription = "Icône de filtre",
+                        modifier = Modifier.clickable { onFilterClick() },
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            // Couleurs pour un look plus intégré
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            )
+        )
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = onDismissMenu,
+        ) {
+            DropdownMenuItem(
+                text = { Text("Tous") },
+                onClick = { onStatusSelected(null) }
+            )
+            MissionStatus.values().forEach { status ->
+                DropdownMenuItem(
+                    text = {
+                        val statusText = when (status) {
+                            MissionStatus.PLANNED -> "Planifiée"
+                            MissionStatus.IN_PROGRESS -> "En cours"
+                            MissionStatus.COMPLETED -> "Terminée"
+                            MissionStatus.CANCELLED -> "Annulée"
+                        }
+                        Text(statusText)
+                    },
+                    onClick = { onStatusSelected(status) }
+                )
+            }
+        }
+    }
+}
+
+
+// --- Le composant MissionCard, entièrement redessiné ---
+@Composable
+fun MissionCard(mission: Mission, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White), // Fond blanc
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        onClick = onClick
     ) {
-        // La carte est maintenant une Ligne (Row)
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            // --- 1. Affiche l'image OU les initiales ---
-            if (!mission.imageUrl.isNullOrBlank()) {
-                // S'il y a une URL d'image, on affiche l'image
-                AsyncImage(
-                    model = mission.imageUrl,
-                    contentDescription = mission.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(8.dp)) // Applique les mêmes coins arrondis que la boîte
-                )
-            } else {
-                // Sinon, on affiche la boîte avec les initiales
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(Color(0xFFE0F7FA), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = mission.title.take(3).uppercase(),
-                        color = Color(0xFF00796B),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+        Column {
+            // --- Section image et statut ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp) // Image un peu plus grande
+                    .background(Color.LightGray)
+            ) {
+                if (!mission.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = mission.imageUrl,
+                        contentDescription = mission.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF00897B).copy(alpha = 0.5f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = mission.title.take(3).uppercase(),
+                            color = Color.White,
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+                // Le statut est maintenant un "chip" en superposition sur l'image
+                StatusChip(
+                    status = mission.status,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // --- 2. Colonne avec les détails (droite) ---
-            Column(modifier = Modifier.weight(1f)) {
+            // --- Section informations ---
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Text(
                     text = mission.title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = mission.description,
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2 // On peut se permettre 2 lignes maintenant
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = "Location",
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(mission.location, color = Color.Gray, fontSize = 12.sp)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // --- 3. Ligne pour la date et l'heure ---
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     InfoChip(
                         text = mission.date,
                         icon = Icons.Outlined.DateRange
                     )
-                    // Fournir l'icône d'horloge
                     InfoChip(
-                        text = "${mission.startTime} - ${mission.endTime}",
-                        icon = Icons.Filled.Schedule
+                        text = mission.location,
+                        icon = Icons.Default.LocationOn
                     )
                 }
             }
         }
-
-        // --- 4. Bouton de statut en bas ---
-        MissionStatusButton(mission.status)
     }
 }
 
-
-/**
- * Un composant pour afficher une information (comme la date ou l'heure)
- * avec une icône optionnelle.
- */
+// InfoChip avec un style plus subtil
 @Composable
 fun InfoChip(
     text: String,
-    icon: ImageVector // Le paramètre pour l'icône
+    icon: ImageVector
 ) {
-    Row(
-        modifier = Modifier
-            .background(Color.Gray.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically // Pour aligner l'icône et le texte
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
-            contentDescription = null, // L'icône est décorative
-            modifier = Modifier.size(14.dp), // Taille plus petite pour l'icône
-            tint = Color.DarkGray
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.width(4.dp)) // Espace entre l'icône et le texte
-        Text(text = text, fontSize = 12.sp, color = Color.DarkGray)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
-
-/**
- * Le bouton de statut qui prend toute la largeur en bas de la carte.
- */
+// Le bouton de statut n'est plus nécessaire ici, il est remplacé par StatusChip
+// Ajout du composant StatusChip qui manquait peut-être dans ce fichier
 @Composable
-fun MissionStatusButton(status: MissionStatus) {
+fun StatusChip(status: MissionStatus, modifier: Modifier = Modifier) {
     val (backgroundColor, textColor) = when (status) {
-        MissionStatus.PLANNED -> Color(0xFFE6FFFA) to Color(0xFF38A169) // Vert clair / Vert foncé
-        MissionStatus.IN_PROGRESS -> Color(0xFFEBF4FF) to Color(0xFF3182CE) // Bleu clair / Bleu foncé
-        MissionStatus.COMPLETED -> Color(0xFFF7FAFC) to Color(0xFF718096) // Gris clair / Gris foncé
-        MissionStatus.CANCELLED -> Color(0xFFFFF5F5) to Color(0xFFE53E3E) // Rouge clair / Rouge foncé
+        MissionStatus.PLANNED -> Color(0xFFE6FFFA) to Color(0xFF38A169)
+        MissionStatus.IN_PROGRESS -> Color(0xFFEBF4FF) to Color(0xFF3182CE)
+        MissionStatus.COMPLETED -> Color(0xFFF7FAFC) to Color(0xFF718096)
+        MissionStatus.CANCELLED -> Color(0xFFFFF5F5) to Color(0xFFE53E3E)
+    }
+    val statusText = when (status) {
+        MissionStatus.PLANNED -> "Planifiée"
+        MissionStatus.IN_PROGRESS -> "En cours"
+        MissionStatus.COMPLETED -> "Terminée"
+        MissionStatus.CANCELLED -> "Annulée"
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
             .background(backgroundColor)
-            .padding(vertical = 12.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
-            text = status.name.replace("_", " ").uppercase(), // ex: "IN PROGRESS"
+            text = statusText,
             color = textColor,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
         )
     }
 }
