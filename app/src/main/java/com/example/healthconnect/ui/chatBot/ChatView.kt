@@ -25,13 +25,10 @@ fun ChatScreen(navController: NavHostController) {
         )
     }
 
-    Scaffold(
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -43,7 +40,7 @@ fun ChatScreen(navController: NavHostController) {
             }
         }
     }
-}
+
 
 @Composable
 fun ChatItem(chat: Chat, onClick: () -> Unit) {

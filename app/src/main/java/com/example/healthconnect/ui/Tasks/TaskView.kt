@@ -36,13 +36,10 @@ fun TachesScreen(navController: NavHostController) {
         )
     }
 
-    Scaffold(
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .background(Color(0xFFF7F7F7))
         ) {
             // --- Titre et bouton All Records ---
@@ -91,7 +88,6 @@ fun TachesScreen(navController: NavHostController) {
             }
         }
     }
-}
 
 @Composable
 fun TacheItem(tache: Tache) {

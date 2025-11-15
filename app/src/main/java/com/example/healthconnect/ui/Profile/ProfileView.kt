@@ -12,11 +12,9 @@ import com.example.healthconnect.ui.components.BottomNavBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavHostController) {
-    Scaffold(bottomBar = { BottomNavBar(navController) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -29,4 +27,3 @@ fun ProfileScreen(navController: NavHostController) {
             }
         }
     }
-}
