@@ -1,1 +1,3 @@
 /build
+# Fichiers de configuration sensibles
+google-services.json

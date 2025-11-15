@@ -1,5 +1,6 @@
 [versions]
-agp = "8.2.2"  # Stable avec Compose 2024.09.00
+agp = "8.2.2"
+hilt = "2.52" # Version stable de Hilt
 kotlin = "2.0.0"
 coreKtx = "1.13.1"
 junit = "4.13.2"
@@ -17,6 +18,7 @@ material3 = "1.2.1"
 navigationRuntimeKtx = "2.7.7"
 composeBom = "2024.09.00"  # ← FIX: Version stable existante
 # Retirez les composeUi individuels : BOM gère tout !
+hiltNavigationCompose = "1.2.0" # <-- AJOUTEZ CETTE LIGNE
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,9 +41,16 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }  # Sans version: BOM
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }  # Sans version: BOM
 androidx-compose-ui-tooling-test = { group = "androidx.compose.ui", name = "ui-tooling-test-junit4" }
+# --- AJOUTEZ CES LIGNES POUR HILT ---
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+# --- AJOUTEZ CES DEUX LIGNES POUR HILT ---
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }

@@ -15,8 +15,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
     alias(libs.plugins.compose.compiler)
-
-
+    alias(libs.plugins.hilt)
+    id("org.jetbrains.kotlin.kapt")
 }
 
 
@@ -81,7 +81,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.material.icons.core)
-
+    implementation("androidx.compose.material:material-icons-extended")
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
@@ -96,6 +96,14 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.tooling.test)
+    // --- DÉPENDANCES HILT AJOUTÉES ---
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+
 
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
@@ -110,4 +118,6 @@ dependencies {
     // Pour la base de données Firestore (stockage des données)
     implementation("com.google.firebase:firebase-firestore")
 }
-
+kapt {
+    correctErrorTypes = true
+}
