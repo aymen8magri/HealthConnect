@@ -1,20 +1,18 @@
-package com.example.healthconnect.ui.Profile
+package com.example.healthconnect.ui
 
 import androidx.lifecycle.ViewModel
-
 import com.example.healthconnect.ui.Profile.logout.LogoutUseCase
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class ProfileViewModel @Inject constructor(
+class MainViewModel @Inject constructor(
     private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
-    /**
-     * Appelé lorsque l'utilisateur clique sur le bouton de déconnexion.
-     */
     fun onLogoutClicked() {
         logoutUseCase.execute()
     }
 }
+    
