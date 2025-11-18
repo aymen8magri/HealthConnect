@@ -1,6 +1,7 @@
 package com.example.healthconnect.ui.missions
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.*
+import androidx.compose.material3.Badge
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +30,9 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.healthconnect.data.mission.Mission
 import com.example.healthconnect.data.mission.MissionStatus
-
+import androidx.compose.ui.text.style.TextAlign // <-- Assurez-vous d'avoir cette importation
+import androidx.compose.material.icons.filled.Check // <-- Add this line
+import androidx.compose.foundation.shape.CircleShape
 // --- La vue principale, avec une nouvelle couleur de fond ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,29 +95,55 @@ fun MissionsView(
     }
 }
 
-
-// --- La TopAppBar, plus minimaliste ---
+// --- La TopAppBar, avec le nouveau style de compteur ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MissionsTopBar(missionCount: Int) {
     TopAppBar(
-        title = { Text("Missions", fontWeight = FontWeight.Bold) },
-        actions = {
-            // Le compteur est maintenant plus subtil
+        title = {
             Text(
-                text = "$missionCount trouvées",
-                modifier = Modifier.padding(end = 16.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
+                text = "Mission",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF00796B)
+                )
             )
         },
+        actions = {
+            Button(
+                onClick = { },
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2F1)),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.padding(end = 16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Missions trouvées", color = Color(0xFF00796B)) // Texte avec la couleur sarcelle
+                    Spacer(Modifier.width(8.dp)) // Espace entre le texte et le badge
+                    Badge(
+                        containerColor = Color.Red,
+                        contentColor = Color.White
+                    ) {
+                        Text(
+                            text = missionCount.toString(),
+                            fontSize = 12.sp, // Une taille légèrement plus grande pour la lisibilité
+                            color = Color.White // Assurer que le texte est blanc
+                        )
+                    }
+                }
+            }
+        },
         colors = TopAppBarDefaults.topAppBarColors(
-            // Fond de la TopAppBar qui correspond à celui de l'écran
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     )
 }
+
+
+
 
 
 // --- La barre de recherche, avec un design plus moderne ---
@@ -138,23 +168,40 @@ fun SearchBar(
                 Icon(Icons.Default.Search, contentDescription = "Icône de recherche", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             trailingIcon = {
-                BadgedBox(
-                    badge = {
-                        if (selectedStatus != null) {
-                            Badge(containerColor = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                ) {
+                Box {
                     Icon(
-                        Icons.Default.Tune,
+                        imageVector = Icons.Default.Tune,
                         contentDescription = "Icône de filtre",
-                        modifier = Modifier.clickable { onFilterClick() },
+                        modifier = Modifier
+                            .clickable { onFilterClick() }
+                            .padding(8.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    if (selectedStatus != null) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd) // Aligne le badge au coin supérieur droit de l'icône Tune
+                                .size(14.dp) // Taille du cercle du badge
+                                .background(
+                                    color = MaterialTheme.colorScheme.error,
+                                    shape = CircleShape
+                                )
+                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape), // Bordure pour séparer
+                            contentAlignment = Alignment.Center // Centre l'icône de coche à l'intérieur
+                        ) {
+                            // 3. L'icône de coche à l'intérieur du badge
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Filtre actif",
+                                modifier = Modifier.size(10.dp),
+                                tint = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    }
                 }
             },
             shape = RoundedCornerShape(16.dp),
-            // Couleurs pour un look plus intégré
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -167,9 +214,15 @@ fun SearchBar(
             expanded = showMenu,
             onDismissRequest = onDismissMenu,
         ) {
+            // ... (le reste du DropdownMenu ne change pas)
             DropdownMenuItem(
                 text = { Text("Tous") },
-                onClick = { onStatusSelected(null) }
+                onClick = { onStatusSelected(null) },
+                leadingIcon = {
+                    if (selectedStatus == null) {
+                        Icon(Icons.Default.Check, "Sélectionné")
+                    }
+                }
             )
             MissionStatus.values().forEach { status ->
                 DropdownMenuItem(
@@ -182,12 +235,18 @@ fun SearchBar(
                         }
                         Text(statusText)
                     },
-                    onClick = { onStatusSelected(status) }
+                    onClick = { onStatusSelected(status) },
+                    leadingIcon = {
+                        if (selectedStatus == status) {
+                            Icon(Icons.Default.Check, "Sélectionné")
+                        }
+                    }
                 )
             }
         }
     }
 }
+
 
 
 // --- Le composant MissionCard, entièrement redessiné ---
