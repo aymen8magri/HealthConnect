@@ -8,27 +8,34 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.healthconnect.ui.Home.HomeScreen
-import com.example.healthconnect.ui.Profile.ProfileScreen
 import com.example.healthconnect.ui.Tasks.TachesScreen
+import com.example.healthconnect.ui.auth.login.LoginScreen
+import com.example.healthconnect.ui.auth.register.RegisterScreen
 import com.example.healthconnect.ui.chatBot.ChatScreen
 import com.example.healthconnect.ui.missiondetail.MissionDetailView // <-- Importez le nouvel écran
 import com.example.healthconnect.ui.missions.MissionsView
+import com.example.healthconnect.ui.profile.ProfileView
 
 // Définissons les routes dans un objet pour éviter les erreurs de frappe
 object AppRoutes {
     const val HOME = "home"
     const val MISSIONS = "missions"
     const val MISSION_DETAIL = "mission_detail"
+
+    const val REGISTER ="register"
+
+    const val LOGIN = "login"
 }
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLogout: () -> Unit
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.HOME, // On démarre sur home
+        startDestination = AppRoutes.LOGIN,
         modifier = modifier
     ) {
         // Route pour la liste des missions
@@ -40,6 +47,13 @@ fun NavGraph(
                     navController.navigate("${AppRoutes.MISSION_DETAIL}/$missionId")
                 }
             )
+        }
+        // --- NOUVEAU COMPOSABLE POUR L'INSCRIPTION ---
+        composable(AppRoutes.REGISTER) {
+            RegisterScreen(navController = navController)
+        }
+        composable(AppRoutes.LOGIN) {
+            LoginScreen(navController = navController)
         }
 
         // Route pour le détail d'une mission
@@ -57,5 +71,12 @@ fun NavGraph(
         composable("home") { HomeScreen(navController) }
         composable("chat") { ChatScreen(navController) }
         composable("taches") { TachesScreen(navController) }
-        composable("profile") { ProfileScreen(navController) }    }
+
+        composable("profile") {
+            ProfileView(
+                navController = navController,
+                onLogout = onLogout // Passer la fonction à l'écran de profil
+            )
+        }
+    }
 }

@@ -117,6 +117,12 @@ dependencies {
 
     // Pour la base de données Firestore (stockage des données)
     implementation("com.google.firebase:firebase-firestore")
+
+    // pour sms
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    implementation("com.google.firebase:firebase-appcheck")
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
 }
 kapt {
     correctErrorTypes = true
