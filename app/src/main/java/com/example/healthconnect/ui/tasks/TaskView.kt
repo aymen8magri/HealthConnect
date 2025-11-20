@@ -1,4 +1,4 @@
-package com.example.healthconnect.ui.Tasks
+package com.example.healthconnect.ui.tasks
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

@@ -1,6 +1,7 @@
 package com.example.healthconnect.data.auth.register
 
 import android.app.Activity
+import com.example.healthconnect.data.models.Roles
 import com.example.healthconnect.data.models.User
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.EmailAuthProvider
@@ -81,7 +82,7 @@ class RegisterRepositoryImpl @Inject constructor(
             fullName = fullName,
             email = email,
             phoneNumber = user.phoneNumber,
-            role = "Volontaire"
+            role = Roles.VOLONTAIRE
         )
         firestore.collection("users").document(user.uid).set(newUser).await()
 

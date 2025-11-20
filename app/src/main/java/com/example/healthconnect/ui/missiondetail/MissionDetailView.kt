@@ -3,7 +3,6 @@ package com.example.healthconnect.ui.missiondetail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,8 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.healthconnect.data.mission.Mission
-import com.example.healthconnect.data.mission.MissionStatus
+import com.example.healthconnect.data.models.Mission
+import com.example.healthconnect.data.models.MissionStatus
+import java.text.SimpleDateFormat
+import java.util.*
 
 // --- La vue principale (Scaffold) ne change pas beaucoup ---
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,9 +92,9 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                 .height(250.dp) // Un peu plus haut
         ) {
             // Image ou initiales en fond
-            if (!mission.imageUrl.isNullOrBlank()) {
+            if (!mission.photoMission.isNullOrBlank()) {
                 AsyncImage(
-                    model = mission.imageUrl,
+                    model = mission.photoMission,
                     contentDescription = mission.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -168,32 +169,12 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     InfoRow(icon = Icons.Default.LocationOn, label = "Lieu", text = mission.location)
-                    InfoRow(icon = Icons.Default.DateRange, label = "Date", text = mission.date)
-                    InfoRow(icon = Icons.Default.Schedule, label = "Heures", text = "${mission.startTime} - ${mission.endTime}")
+                    InfoRow(icon = Icons.Default.DateRange, label = "Date", text = formatDate(mission.startDate))
+                    InfoRow(icon = Icons.Default.Schedule, label = "Période", text = "${formatDate(mission.startDate)} — ${formatDate(mission.endDate)}")
                 }
             }
 
-            // CARTE 3: Matériel Requis
-            if (mission.materialRequired.isNotEmpty()) {
-                Card(
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Matériel Requis", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        mission.materialRequired.forEach { material ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(material, style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // CARTE 4: Participants
+            // CARTE 3: Participants
             Card(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 shape = RoundedCornerShape(16.dp)
@@ -202,27 +183,25 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                     Text("Participants", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(12.dp))
                     ParticipantsRow(
-                        volunteersCount = mission.volunteers.size,
-                        maxVolunteers = mission.maxVolunteers,
-                        doctorsCount = mission.doctors.size,
-                        maxDoctors = mission.maxDoctors
+                        volunteersCount = mission.nbrVolontaires,
+                        maxVolunteers = mission.nbrVolontaires, // no separate max in model; using same value as total for display
+                        doctorsCount = mission.nbrMedecins,
+                        maxDoctors = mission.nbrMedecins
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Total inscrits: ${mission.participantIds.size}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
 
         // --- 3. BOUTON D'ACTION EN BAS ---
         // Le `Spacer` pousse le bouton en bas de l'écran s'il y a peu de contenu
-        if (rememberScrollState().canScrollForward || rememberScrollState().canScrollBackward) {
-            Spacer(modifier = Modifier.height(16.dp))
-        } else {
-            Spacer(modifier = Modifier.weight(1f))
-        }
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            val isButtonEnabled = mission.status == MissionStatus.PLANNED || mission.status == MissionStatus.IN_PROGRESS
+            val isButtonEnabled = mission.status == MissionStatus.PLANNED || mission.status == MissionStatus.ONGOING
             val buttonText = when (mission.status) {
-                MissionStatus.PLANNED, MissionStatus.IN_PROGRESS -> "Rejoindre la Mission"
+                MissionStatus.PLANNED, MissionStatus.ONGOING -> "Rejoindre la Mission"
                 MissionStatus.COMPLETED -> "Mission Terminée"
                 MissionStatus.CANCELLED -> "Mission Annulée"
             }
@@ -310,28 +289,35 @@ fun ParticipantCounter(modifier: Modifier = Modifier, label: String, count: Int,
 fun StatusChip(status: MissionStatus) {
     val (backgroundColor, textColor) = when (status) {
         MissionStatus.PLANNED -> Color(0xFFE6FFFA) to Color(0xFF38A169)
-        MissionStatus.IN_PROGRESS -> Color(0xFFEBF4FF) to Color(0xFF3182CE)
+        MissionStatus.ONGOING -> Color(0xFFEBF4FF) to Color(0xFF3182CE)
         MissionStatus.COMPLETED -> Color(0xFFF7FAFC) to Color(0xFF718096)
         MissionStatus.CANCELLED -> Color(0xFFFFF5F5) to Color(0xFFE53E3E)
     }
     val statusText = when (status) {
         MissionStatus.PLANNED -> "Planifiée"
-        MissionStatus.IN_PROGRESS -> "En cours"
+        MissionStatus.ONGOING -> "En cours"
         MissionStatus.COMPLETED -> "Terminée"
         MissionStatus.CANCELLED -> "Annulée"
     }
 
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = backgroundColor,
+        tonalElevation = 0.dp,
+        modifier = Modifier.padding(0.dp)
     ) {
         Text(
             text = statusText,
             color = textColor,
             fontWeight = FontWeight.Bold,
-            fontSize = 12.sp
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }
+}
+
+private fun formatDate(epochMillis: Long): String {
+    if (epochMillis <= 0L) return "-"
+    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    return sdf.format(Date(epochMillis))
 }

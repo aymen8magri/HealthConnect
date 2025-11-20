@@ -6,6 +6,8 @@ import com.example.healthconnect.data.auth.register.RegisterRepository
 import com.example.healthconnect.data.auth.register.RegisterRepositoryImpl
 import com.example.healthconnect.data.mission.MissionRepository
 import com.example.healthconnect.data.mission.MissionRepositoryImpl
+import com.example.healthconnect.data.admin.validateUsers.UserRepository
+import com.example.healthconnect.data.admin.validateUsers.UserRepositoryImpl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -35,6 +37,12 @@ object AppModule {
     @Singleton
     fun provideMissionRepository(): MissionRepository {
         return MissionRepositoryImpl()
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(): UserRepository {
+        return UserRepositoryImpl()
     }
 
     // Fournit une instance de RegisterRepository

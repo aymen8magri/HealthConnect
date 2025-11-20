@@ -17,12 +17,17 @@ import com.example.healthconnect.ui.MainViewModel
 import com.example.healthconnect.ui.theme.HealthConnectTheme
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
+import com.example.healthconnect.data.admin.validateUsers.UserRepositoryImpl
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     // Injection du ViewModel au niveau de l'activité
     private val mainViewModel: MainViewModel by viewModels()
+
+    @Inject
+    lateinit var userRepository: UserRepositoryImpl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +37,10 @@ class MainActivity : ComponentActivity() {
 
                 // ---- OBSERVATION FIABLE DE L'ÉTAT D'AUTHENTIFICATION ----
                 val auth = FirebaseAuth.getInstance()
+
+                // État local indiquant si l'utilisateur connecté est admin
+                var isAdmin by remember { mutableStateOf(false) }
+
                 // DisposableEffect gère l'ajout et le retrait de l'écouteur
                 DisposableEffect(auth) {
                     val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -43,6 +52,13 @@ class MainActivity : ComponentActivity() {
                                 popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                 launchSingleTop = true
                             }
+                            // Clear admin flag et l'utilisateur courant
+                            isAdmin = false
+                            userRepository.setCurrentUser(null)
+                        } else {
+                            // L'utilisateur est connecté, mapper l'email vers le repo
+                            userRepository.setCurrentUserByEmail(user.email)
+                            isAdmin = userRepository.isCurrentUserAdmin()
                         }
                     }
                     // Attacher l'écouteur
@@ -68,7 +84,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     bottomBar = {
                         if (showBottomBar) {
-                            BottomNavBar(navController = navController)
+                            BottomNavBar(navController = navController, isAdmin = isAdmin)
                         }
                     }
                 ) { innerPadding ->

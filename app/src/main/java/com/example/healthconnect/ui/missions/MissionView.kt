@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
@@ -28,13 +30,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.example.healthconnect.data.mission.Mission
-import com.example.healthconnect.data.mission.MissionStatus
-import androidx.compose.ui.text.style.TextAlign // <-- Assurez-vous d'avoir cette importation
-import androidx.compose.material.icons.filled.Check // <-- Add this line
-import androidx.compose.foundation.shape.CircleShape
+import com.example.healthconnect.data.models.Mission
+import com.example.healthconnect.data.models.MissionStatus
+import java.text.SimpleDateFormat
+import java.util.*
+
 // --- La vue principale, avec une nouvelle couleur de fond ---
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun MissionsView(
     navController: NavHostController,
@@ -87,7 +90,7 @@ fun MissionsView(
                 items(missions) { mission ->
                     MissionCard(
                         mission = mission,
-                        onClick = { onMissionClick(mission.id) }
+                        onClick = { onMissionClick(mission.idMission) }
                     )
                 }
             }
@@ -224,12 +227,12 @@ fun SearchBar(
                     }
                 }
             )
-            MissionStatus.values().forEach { status ->
+            MissionStatus.entries.forEach { status ->
                 DropdownMenuItem(
                     text = {
                         val statusText = when (status) {
                             MissionStatus.PLANNED -> "Planifiée"
-                            MissionStatus.IN_PROGRESS -> "En cours"
+                            MissionStatus.ONGOING -> "En cours"
                             MissionStatus.COMPLETED -> "Terminée"
                             MissionStatus.CANCELLED -> "Annulée"
                         }
@@ -246,6 +249,7 @@ fun SearchBar(
         }
     }
 }
+
 
 
 
@@ -267,9 +271,9 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                     .height(150.dp) // Image un peu plus grande
                     .background(Color.LightGray)
             ) {
-                if (!mission.imageUrl.isNullOrBlank()) {
+                if (mission.photoMission.isNotBlank()) {
                     AsyncImage(
-                        model = mission.imageUrl,
+                        model = mission.photoMission,
                         contentDescription = mission.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -314,13 +318,13 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2 // On peut se permettre 2 lignes maintenant
                 )
-                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     InfoChip(
-                        text = mission.date,
+                        text = formatMissionDates(mission.startDate, mission.endDate),
                         icon = Icons.Outlined.DateRange
                     )
                     InfoChip(
@@ -330,6 +334,17 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+fun formatMissionDates(start: Long, end: Long): String {
+    return try {
+        val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val s = if (start > 0) fmt.format(Date(start)) else "-"
+        val e = if (end > 0) fmt.format(Date(end)) else "-"
+        if (s == "-" && e == "-") "" else "$s – $e"
+    } catch (_: Exception) {
+        ""
     }
 }
 
@@ -361,13 +376,13 @@ fun InfoChip(
 fun StatusChip(status: MissionStatus, modifier: Modifier = Modifier) {
     val (backgroundColor, textColor) = when (status) {
         MissionStatus.PLANNED -> Color(0xFFE6FFFA) to Color(0xFF38A169)
-        MissionStatus.IN_PROGRESS -> Color(0xFFEBF4FF) to Color(0xFF3182CE)
+        MissionStatus.ONGOING -> Color(0xFFEBF4FF) to Color(0xFF3182CE)
         MissionStatus.COMPLETED -> Color(0xFFF7FAFC) to Color(0xFF718096)
         MissionStatus.CANCELLED -> Color(0xFFFFF5F5) to Color(0xFFE53E3E)
     }
     val statusText = when (status) {
         MissionStatus.PLANNED -> "Planifiée"
-        MissionStatus.IN_PROGRESS -> "En cours"
+        MissionStatus.ONGOING -> "En cours"
         MissionStatus.COMPLETED -> "Terminée"
         MissionStatus.CANCELLED -> "Annulée"
     }

@@ -2,9 +2,9 @@ package com.example.healthconnect.ui.missions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.healthconnect.data.mission.Mission
+import com.example.healthconnect.data.models.Mission
 import com.example.healthconnect.data.mission.MissionRepository
-import com.example.healthconnect.data.mission.MissionStatus
+import com.example.healthconnect.data.models.MissionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

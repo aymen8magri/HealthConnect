@@ -1,0 +1,23 @@
+package com.example.healthconnect.data.models
+
+enum class Specialite {
+    GENERALISTE,
+    CARDIOLOGUE,
+    PEDIATRE,
+    DERMATOLOGUE,
+    GYNECOLOGUE,
+    ENDOCRINOLOGUE,
+    NEUROLOGUE,
+    PSYCHIATRE,
+    PNEUMOLOGUE,
+    GASTROENTEROLOGUE,
+    HEPATOLOGUE,
+    NEPHROLOGUE,
+    UROLOGUE,
+    RHEUMATOLOGUE,
+    HEMATOLOGUE,
+    ONCOLOGUE,
+    ALLERGOLOGUE,
+    OPHTALMOLOGUE,
+    AUTRE
+}

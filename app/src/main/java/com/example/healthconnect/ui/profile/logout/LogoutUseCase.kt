@@ -1,4 +1,4 @@
-package com.example.healthconnect.ui.Profile.logout
+package com.example.healthconnect.ui.profile.logout
 
 import com.google.firebase.auth.FirebaseAuth
 import javax.inject.Inject

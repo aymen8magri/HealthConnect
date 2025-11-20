@@ -8,13 +8,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.healthconnect.ui.Home.HomeScreen
-import com.example.healthconnect.ui.Tasks.TachesScreen
+import com.example.healthconnect.ui.admin.userDetail.UserDetailView
+import com.example.healthconnect.ui.admin.userList.UserListView
+import com.example.healthconnect.ui.tasks.TachesScreen
 import com.example.healthconnect.ui.auth.login.LoginScreen
 import com.example.healthconnect.ui.auth.register.RegisterScreen
 import com.example.healthconnect.ui.chatBot.ChatScreen
 import com.example.healthconnect.ui.missiondetail.MissionDetailView // <-- Importez le nouvel écran
 import com.example.healthconnect.ui.missions.MissionsView
-import com.example.healthconnect.ui.profile.ProfileView
+import com.example.healthconnect.ui.profile.ProfileViewContent
+import com.example.healthconnect.ui.missions.AddMissionScreen
 
 // Définissons les routes dans un objet pour éviter les erreurs de frappe
 object AppRoutes {
@@ -25,6 +28,14 @@ object AppRoutes {
     const val REGISTER ="register"
 
     const val LOGIN = "login"
+
+    // Admin routes
+    const val ADMIN_DASHBOARD = "admin_dashboard"
+    const val USER_DETAIL = "user_detail"
+    const val ADD_MISSION = "add_mission"
+
+    // Profile route
+    const val PROFILE = "profile"
 }
 
 @Composable
@@ -48,6 +59,10 @@ fun NavGraph(
                 }
             )
         }
+        // Add mission screen
+        composable(AppRoutes.ADD_MISSION) {
+            AddMissionScreen(navController = navController)
+        }
         // --- NOUVEAU COMPOSABLE POUR L'INSCRIPTION ---
         composable(AppRoutes.REGISTER) {
             RegisterScreen(navController = navController)
@@ -68,15 +83,34 @@ fun NavGraph(
             }
         }
 
-        composable("home") { HomeScreen(navController) }
+        composable(AppRoutes.HOME) { HomeScreen(navController) }
         composable("chat") { ChatScreen(navController) }
         composable("taches") { TachesScreen(navController) }
 
-        composable("profile") {
-            ProfileView(
+        composable(AppRoutes.PROFILE) {
+            ProfileViewContent(
                 navController = navController,
                 onLogout = onLogout // Passer la fonction à l'écran de profil
             )
+        }
+
+        // Admin dashboard -> liste des utilisateurs
+        composable(AppRoutes.ADMIN_DASHBOARD) {
+            // onUserClick navigue vers le détail en fournissant l'UID
+            UserListView(navController = navController) { userId ->
+                navController.navigate("${AppRoutes.USER_DETAIL}/$userId")
+            }
+        }
+
+        // Route pour le détail d'un utilisateur
+        composable(
+            route = "${AppRoutes.USER_DETAIL}/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")
+            if (userId != null) {
+                UserDetailView(navController = navController, userId = userId)
+            }
         }
     }
 }

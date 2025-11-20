@@ -1,7 +1,7 @@
 package com.example.healthconnect.ui
 
 import androidx.lifecycle.ViewModel
-import com.example.healthconnect.ui.Profile.logout.LogoutUseCase
+import com.example.healthconnect.ui.profile.logout.LogoutUseCase
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
