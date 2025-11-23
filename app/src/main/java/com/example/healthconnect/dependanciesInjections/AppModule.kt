@@ -35,8 +35,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideMissionRepository(): MissionRepository {
-        return MissionRepositoryImpl()
+    fun provideMissionRepository(firestore: FirebaseFirestore): MissionRepository {
+        return MissionRepositoryImpl(firestore)
     }
 
     @Provides

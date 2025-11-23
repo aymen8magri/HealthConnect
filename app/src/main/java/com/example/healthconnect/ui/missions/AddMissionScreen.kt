@@ -522,7 +522,7 @@ fun TaskItem(
             )
 
             Text("Nombre max de participants", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = blueMedium)
-            OutlinedTextField(
+            /*OutlinedTextField(
                 value = nbr,
                 onValueChange = {
                     val filtered = it.filter { ch -> ch.isDigit() }
@@ -533,7 +533,7 @@ fun TaskItem(
                 modifier = Modifier.fillMaxWidth(),
                 keyboardType = KeyboardType.Number,
                 shape = RoundedCornerShape(8.dp)
-            )
+            )*/
 
             Text("Description", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = blueMedium)
             OutlinedTextField(

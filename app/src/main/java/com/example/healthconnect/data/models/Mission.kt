@@ -1,28 +1,20 @@
 package com.example.healthconnect.data.models
 
-/**
- * Représente une mission.
- * - relation one-to-many: mission -> tasks (taskIds)
- * - relation many-to-many with users via Participation (participantIds)
- */
+import com.google.firebase.Timestamp
+
 data class Mission(
-    val idMission: String = "",
-    val title: String = "",
-    val description: String = "",
-    val location: String = "",
-    // timestamps in epoch millis for portability
-    val startDate: Long = 0L,
-    val endDate: Long = 0L,
-    val status: MissionStatus = MissionStatus.PLANNED,
-    val validationStatus: Status=Status.PENDING,
-    val nbrMedecins: Int = 0,
-    val nbrVolontaires: Int = 0,
-    // One-to-many: task ids belonging to this mission
-    val taskIds: List<String> = emptyList(),
-    // Many-to-many: participation IDs linking this mission to users
-    val participantIds: List<String> = emptyList(),
-    // Photo (URL or storage path)
-    val photoMission: String = "",
-    // Full task objects (one-to-many). Stored here for simplicity in the in-memory implementation
-    val listTasks: List<Task> = emptyList()
+    var id: String = "",  // <-- ID Firestore ajouté
+    var title: String? = null,
+    var description: String? = null,
+    var location: String? = null,
+    var startDate: Timestamp? = null,
+    var endDate: Timestamp? = null,
+    var status: MissionStatus = MissionStatus.PLANNED,
+    var validationStatus: Status = Status.PENDING,
+    var nbrMedecins: Int? = null,
+    var nbrVolontaires: Int? = null,
+    var taskIds: List<String>? = null,
+    var participantIds: List<String>? = null,
+    var photoMission: String? = null,
+    var listTasks: List<String>? = null
 )

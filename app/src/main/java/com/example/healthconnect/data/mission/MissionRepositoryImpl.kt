@@ -1,33 +1,72 @@
 package com.example.healthconnect.data.mission
 
 import com.example.healthconnect.data.models.Mission
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import java.util.*
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MissionRepositoryImpl @Inject constructor() : MissionRepository {
+class MissionRepositoryImpl @Inject constructor(
+    private val firestore: FirebaseFirestore
+) : MissionRepository {
 
-    private val missions = mutableListOf<Mission>()
-    private val mutex = Mutex()
+    private val missionCollection = firestore.collection("missions")
 
     override suspend fun getAllMissions(): List<Mission> {
-        return mutex.withLock { missions.toList() }
+        return try {
+            missionCollection.get().await().documents.map { doc ->
+                doc.toObject(Mission::class.java)?.apply {
+                    id = doc.id // <-- on injecte l’ID Firestore
+                }
+            }.filterNotNull()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     override suspend fun getMissionById(missionId: String): Mission? {
-        return mutex.withLock { missions.find { it.idMission == missionId } }
+        return try {
+            missionCollection.document(missionId).get().await().toObject(Mission::class.java)?.apply {
+                id = missionId
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 
+
     override suspend fun addMission(mission: Mission): Boolean {
-        return mutex.withLock {
-            val id = if (mission.idMission.isBlank()) UUID.randomUUID().toString() else mission.idMission
-            val toAdd = mission.copy(idMission = id)
-            missions.add(toAdd)
+        return try {
+            val id = mission.id.ifBlank { missionCollection.document().id }
+
+            val toSave = mission.copy(id = id)
+
+            missionCollection.document(id).set(toSave).await()
             true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun updateMission(mission: Mission): Boolean {
+        return try {
+            missionCollection.document(mission.id)
+                .set(mission)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+
+    override suspend fun deleteMission(missionId: String): Boolean {
+        return try {
+            missionCollection.document(missionId).delete().await()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 }
-

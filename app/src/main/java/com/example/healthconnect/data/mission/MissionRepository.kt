@@ -7,4 +7,6 @@ interface MissionRepository {
     suspend fun getAllMissions(): List<Mission>
     suspend fun getMissionById(missionId: String): Mission?
     suspend fun addMission(mission: Mission): Boolean
+    suspend fun updateMission(mission: Mission): Boolean
+    suspend fun deleteMission(missionId: String): Boolean
 }
