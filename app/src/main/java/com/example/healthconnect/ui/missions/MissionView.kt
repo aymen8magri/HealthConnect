@@ -53,7 +53,6 @@ fun MissionsView(
         topBar = {
             MissionsTopBar(missionCount = missions.size)
         },
-        // Une couleur de fond douce pour tout l'écran
         containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
     ) { paddingValues ->
         Column(
@@ -61,7 +60,8 @@ fun MissionsView(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // --- La barre de recherche est maintenant sur un fond coloré ---
+
+            // BARRE DE RECHERCHE + FILTRE (toujours visible)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,20 +82,39 @@ fun MissionsView(
                 )
             }
 
-            // --- Liste des missions avec un espacement ---
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(missions) { mission ->
-                    MissionCard(
-                        mission = mission,
-                        onClick = { onMissionClick(mission.idMission) }
+            // --- MESSAGE SI AUCUNE MISSION TROUVÉE ---
+            if (missions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Aucune mission trouvée.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
                     )
+                }
+            } else {
+                // --- LISTE DES MISSIONS ---
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(missions) { mission ->
+                        MissionCard(
+                            mission = mission,
+                            onClick = { onMissionClick(mission.id) }
+                        )
+                    }
                 }
             }
         }
     }
+
 }
 
 // --- La TopAppBar, avec le nouveau style de compteur ---
@@ -129,12 +148,12 @@ fun MissionsTopBar(missionCount: Int) {
                         containerColor = Color.Red,
                         contentColor = Color.White
                     ) {
-                        Text(
-                            text = missionCount.toString(),
-                            fontSize = 12.sp, // Une taille légèrement plus grande pour la lisibilité
-                            color = Color.White // Assurer que le texte est blanc
+                        Text(text = missionCount.toString(),
+                            fontSize = 12.sp,
+                            color = Color.White
                         )
                     }
+
                 }
             }
         },
@@ -271,7 +290,7 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                     .height(150.dp) // Image un peu plus grande
                     .background(Color.LightGray)
             ) {
-                if (mission.photoMission.isNotBlank()) {
+                if (mission.photoMission?.isNotBlank() == true) {
                     AsyncImage(
                         model = mission.photoMission,
                         contentDescription = mission.title,
@@ -286,7 +305,7 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = mission.title.take(3).uppercase(),
+                            text = mission.title?.take(3)?.uppercase() ?: "",
                             color = Color.White,
                             fontSize = 36.sp,
                             fontWeight = FontWeight.Bold
@@ -308,12 +327,12 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = mission.title,
+                    text = mission.title?.take(3)?.uppercase() ?: "",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = mission.description,
+                    text = mission?.description ?: "Non spécifié",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2 // On peut se permettre 2 lignes maintenant
@@ -324,11 +343,11 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     InfoChip(
-                        text = formatMissionDates(mission.startDate, mission.endDate),
+                        text = formatMissionDates(mission.startDate?.toDate()?.time ?: 0L, mission.endDate?.toDate()?.time ?: 0L),
                         icon = Icons.Outlined.DateRange
                     )
                     InfoChip(
-                        text = mission.location,
+                        text = mission?.location ?:"Non spécifié",
                         icon = Icons.Default.LocationOn
                     )
                 }

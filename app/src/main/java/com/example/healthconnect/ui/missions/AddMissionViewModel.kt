@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.google.firebase.Timestamp
 
 @HiltViewModel
 class AddMissionViewModel @Inject constructor(
@@ -149,13 +150,17 @@ class AddMissionViewModel @Inject constructor(
         viewModelScope.launch {
             if (!validateAll()) return@launch
             _isSaving.value = true
+
+            val startTimestamp = startDate.value?.let { Timestamp(Date(it)) }
+            val endTimestamp = endDate.value?.let { Timestamp(Date(it)) }
+
             val mission = Mission(
-                idMission = "",
+                id = "",
                 title = title.value,
                 description = description.value,
                 location = locationFull.value,
-                startDate = startDate.value ?: 0L,
-                endDate = endDate.value ?: 0L,
+                startDate = startTimestamp,
+                endDate = endTimestamp,
                 status = com.example.healthconnect.data.models.MissionStatus.PLANNED,
                 validationStatus = com.example.healthconnect.data.models.Status.PENDING,
                 nbrMedecins = nbrMedecins.value,
@@ -163,7 +168,7 @@ class AddMissionViewModel @Inject constructor(
                 taskIds = _tasks.value.map { it.idTask },
                 participantIds = emptyList(),
                 photoMission = photoUri.value ?: "",
-                listTasks = _tasks.value
+                listTasks = emptyList()
             )
             val res = missionRepository.addMission(mission)
             _isSaving.value = false

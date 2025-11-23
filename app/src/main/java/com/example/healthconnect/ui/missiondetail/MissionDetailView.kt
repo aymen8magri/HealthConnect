@@ -107,7 +107,7 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = mission.title.take(3).uppercase(),
+                        text = mission.title?.take(3)?.uppercase() ?: "",
                         fontSize = 60.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.8f)
@@ -144,15 +144,16 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                     ) {
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = mission.title,
+                            text = mission.title ?: "", // Utilisez l'opérateur Elvis pour fournir une valeur par défaut
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
-                        StatusChip(status = mission.status)
-                    }
+                        mission?.status?.let { status ->
+                            StatusChip(status = status)
+                        }                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = mission.description,
+                        text = mission?.description ?: "",
                         style = MaterialTheme.typography.bodyMedium,
                         lineHeight = 22.sp
                     )
@@ -168,9 +169,9 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    InfoRow(icon = Icons.Default.LocationOn, label = "Lieu", text = mission.location)
-                    InfoRow(icon = Icons.Default.DateRange, label = "Date", text = formatDate(mission.startDate))
-                    InfoRow(icon = Icons.Default.Schedule, label = "Période", text = "${formatDate(mission.startDate)} — ${formatDate(mission.endDate)}")
+                    InfoRow(icon = Icons.Default.LocationOn, label = "Lieu", text = mission.location ?: "Non spécifié")
+                    InfoRow(icon = Icons.Default.DateRange, label = "Date", text = formatDate(mission.startDate?.toDate()?.time ?: 0L))
+                    InfoRow(icon = Icons.Default.Schedule, label = "Période", text = "${formatDate(mission.startDate?.toDate()?.time ?: 0L)} — ${formatDate(mission.endDate?.toDate()?.time ?: 0L)}")
                 }
             }
 
@@ -183,13 +184,13 @@ fun MissionDetailContent(mission: Mission, modifier: Modifier = Modifier) {
                     Text("Participants", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(12.dp))
                     ParticipantsRow(
-                        volunteersCount = mission.nbrVolontaires,
-                        maxVolunteers = mission.nbrVolontaires, // no separate max in model; using same value as total for display
-                        doctorsCount = mission.nbrMedecins,
-                        maxDoctors = mission.nbrMedecins
+                        volunteersCount = mission?.nbrVolontaires ?: 0,
+                        maxVolunteers = mission?.nbrVolontaires ?: 0,
+                        doctorsCount = mission?.nbrMedecins ?: 0,
+                        maxDoctors = mission?.nbrMedecins ?: 0
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Total inscrits: ${mission.participantIds.size}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Total inscrits: ${mission.participantIds?.size}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
