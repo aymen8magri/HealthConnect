@@ -148,7 +148,7 @@ fun UserDetailView(
                             )
 
                             // Status badge
-                            DetailStatusBadge(status = user.status)
+                            DetailStatusBadge(status = user.statusRole)
                         }
                     }
 

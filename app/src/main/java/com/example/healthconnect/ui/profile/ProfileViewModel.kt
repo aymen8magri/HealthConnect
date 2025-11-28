@@ -1,10 +1,10 @@
 package com.example.healthconnect.ui.profile
 
-import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.healthconnect.data.admin.validateUsers.UserRepository
 import com.example.healthconnect.data.models.User
-import com.example.healthconnect.data.admin.validateUsers.UserRepositoryImpl
 import com.example.healthconnect.ui.profile.logout.LogoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val logoutUseCase: LogoutUseCase,
-    private val userRepository: UserRepositoryImpl
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -27,25 +27,20 @@ class ProfileViewModel @Inject constructor(
     private val _editedUser = MutableStateFlow<User?>(null)
     val editedUser: StateFlow<User?> = _editedUser
 
+    val isMed = mutableStateOf<Boolean?>(null)
+    val isCoord = mutableStateOf<Boolean?>(null)
+    val isVol = mutableStateOf<Boolean?>(null)
+    val isAdmin = mutableStateOf<Boolean?>(null)
+
     init {
-        loadCurrentUser()
-    }
-
-    private fun loadCurrentUser() {
         viewModelScope.launch {
-            // Récupérer l'utilisateur du repository singleton
-            var user = userRepository.getCurrentUser()
-            if (user == null) {
-                // Pour test local : forcer user_1 si aucun utilisateur n'est défini
-                Log.d("ProfileViewModel", "Aucun utilisateur courant trouvé, forçage vers user_1 pour test")
-                userRepository.setCurrentUser("admin_1")
-                user = userRepository.getCurrentUser()
-            } else {
-                Log.d("ProfileViewModel", "Utilisateur courant trouvé: ${user.uid}")
-            }
+            // Load the current user from Firestore
+            _currentUser.value = userRepository.getCurrentUser()
 
-            _currentUser.value = user
-            _editedUser.value = user
+            // Load verifications
+            isMed.value = userRepository.isCurrentUserDoctorVerified()
+            isCoord.value = userRepository.isCurrentUserCoordinatorVerified()
+            isAdmin.value = userRepository.isCurrentUserAdmin()
         }
     }
 
@@ -66,32 +61,15 @@ class ProfileViewModel @Inject constructor(
     fun saveChanges() {
         viewModelScope.launch {
             _editedUser.value?.let { updatedUser ->
-                // TODO: Save to Firestore/backend
+                // save to Firestore
+                userRepository.updateUser(updatedUser)
                 _currentUser.value = updatedUser
                 _isEditing.value = false
             }
         }
     }
 
-    /**
-     * Appelé lorsque l'utilisateur clique sur le bouton de déconnexion.
-     */
     fun onLogoutClicked() {
         logoutUseCase.execute()
-    }
-
-    // Debug helper: force current user for testing
-    fun forceSetCurrentUserForTest(userId: String) {
-        viewModelScope.launch {
-            try {
-                userRepository.setCurrentUser(userId)
-                val user = userRepository.getCurrentUser()
-                Log.d("ProfileViewModel", "forceSetCurrentUserForTest -> set to: ${user?.uid}")
-                _currentUser.value = user
-                _editedUser.value = user
-            } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Error forcing current user: ${e.message}")
-            }
-        }
     }
 }

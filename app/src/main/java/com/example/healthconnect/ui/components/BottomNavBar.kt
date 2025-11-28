@@ -1,30 +1,36 @@
 package com.example.healthconnect.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.healthconnect.navigation.AppRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
+fun BottomNavBar(
+    navController: NavController,
+    viewModel: BottomNavViewModel = hiltViewModel()
+) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
+    val isAdmin = viewModel.isAdmin.value
+
+    // Wait until Firebase loads the role
+    if (isAdmin == null) return
+
     NavigationBar {
-        if (true) {
-            // Admin: Utilisateurs, Missions, Profil
+
+        if (isAdmin) {
+            // -------------------------
+            // ADMIN NAVIGATION
+            // -------------------------
             NavigationBarItem(
-                icon = { Icon(imageVector = Icons.Default.Group, contentDescription = "Utilisateurs") },
+                icon = { Icon(Icons.Default.Group, contentDescription = "Utilisateurs") },
                 label = { Text("Utilisateurs") },
                 selected = currentDestination?.route == AppRoutes.ADMIN_DASHBOARD,
                 onClick = {
@@ -50,7 +56,7 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
             )
 
             NavigationBarItem(
-                icon = { Icon(imageVector = Icons.Default.Person, contentDescription = "Profil") },
+                icon = { Icon(Icons.Default.Person, contentDescription = "Profil") },
                 label = { Text("Profil") },
                 selected = currentDestination?.route == AppRoutes.PROFILE,
                 onClick = {
@@ -63,15 +69,11 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
             )
 
         } else {
-            // Regular user bar (existing items)
-            //Home
+            // -------------------------
+            // NORMAL USER NAVIGATION
+            // -------------------------
             NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Home,
-                        contentDescription = "Home"
-                    )
-                },
+                icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                 label = { Text("Home") },
                 selected = currentDestination?.route == "home",
                 onClick = {
@@ -83,7 +85,6 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
                 }
             )
 
-            //Chat
             NavigationBarItem(
                 icon = { Icon(Icons.Default.Email, contentDescription = "Chat") },
                 label = { Text("Chat") },
@@ -97,7 +98,6 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
                 }
             )
 
-            //tasks
             NavigationBarItem(
                 icon = { Icon(Icons.Default.Settings, contentDescription = "Tâches") },
                 label = { Text("Tâches") },
@@ -111,7 +111,6 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
                 }
             )
 
-            //missions
             NavigationBarItem(
                 icon = { Icon(Icons.Default.CheckCircle, contentDescription = "Missions") },
                 label = { Text("Missions") },
@@ -125,14 +124,8 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
                 }
             )
 
-            //profile
             NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "profile"
-                    )
-                },
+                icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
                 label = { Text("Profil") },
                 selected = currentDestination?.route == "profile",
                 onClick = {

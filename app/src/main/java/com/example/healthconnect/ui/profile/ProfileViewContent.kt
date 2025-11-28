@@ -34,9 +34,9 @@ fun ProfileViewContent(
     onLogout: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val currentUser by viewModel.currentUser.collectAsState()
     val isEditing by viewModel.isEditing.collectAsState()
     val editedUser by viewModel.editedUser.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
 
     if (isEditing && editedUser != null) {
         EditProfileScreen(
@@ -55,29 +55,6 @@ fun ProfileViewContent(
             onLogout = onLogout,
             onEditClick = { viewModel.startEditing() }
         )
-    } else {
-        // Loading state with a debug button to force a test user (user_1)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorResource(R.color.white)),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator(
-                    color = colorResource(R.color.blue_dark)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                // Debug button - only for local testing
-                Button(
-                    onClick = { viewModel.forceSetCurrentUserForTest("user_1") },
-                    colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.green_light)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Forcer user_1 (debug)")
-                }
-            }
-        }
     }
 }
 

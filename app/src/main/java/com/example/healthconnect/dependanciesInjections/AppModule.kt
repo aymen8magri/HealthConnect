@@ -41,8 +41,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideUserRepository(): UserRepository {
-        return UserRepositoryImpl()
+    fun provideUserRepository(firestore: FirebaseFirestore
+    ): UserRepository {
+        return UserRepositoryImpl(firestore)
     }
 
     // Fournit une instance de RegisterRepository

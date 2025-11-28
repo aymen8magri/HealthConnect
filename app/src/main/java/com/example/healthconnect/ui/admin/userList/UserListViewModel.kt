@@ -46,7 +46,7 @@ class UserListViewModel @Inject constructor(
             )
         }
         val byRole = role?.let { r -> byQuery.filter { it.role == r } } ?: byQuery
-        val byStatus = status?.let { s -> byRole.filter { it.status == s } } ?: byRole
+        val byStatus = status?.let { s -> byRole.filter { it.statusRole == s } } ?: byRole
         byStatus
     }.stateIn(
         scope = viewModelScope,

@@ -27,7 +27,7 @@ data class User(
 
     val image: String = "",
 
-    val statusRole: Status = Status.PENDING,
+    val statusRole: Status = Status.VALIDATED,
 
     // Specific fields for Doctors (Médecins)
     val cabinet: String = "",
