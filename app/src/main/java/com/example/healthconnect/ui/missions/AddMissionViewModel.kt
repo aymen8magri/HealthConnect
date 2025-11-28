@@ -27,11 +27,8 @@ class AddMissionViewModel @Inject constructor(
     private val _description = MutableStateFlow("")
     val description: StateFlow<String> = _description.asStateFlow()
 
-    private val _locationDisplay = MutableStateFlow("")
-    val locationDisplay: StateFlow<String> = _locationDisplay.asStateFlow()
-
-    private val _locationFull = MutableStateFlow("")
-    val locationFull: StateFlow<String> = _locationFull.asStateFlow()
+    private val _location = MutableStateFlow("")
+    val location: StateFlow<String> = _location.asStateFlow()
 
     private val _startDate = MutableStateFlow<Long?>(null)
     val startDate: StateFlow<Long?> = _startDate.asStateFlow()
@@ -62,10 +59,7 @@ class AddMissionViewModel @Inject constructor(
 
     fun onTitleChange(v: String) { _title.value = v }
     fun onDescriptionChange(v: String) { _description.value = v }
-    fun onLocationSelected(display: String, full: String) {
-        _locationDisplay.value = display
-        _locationFull.value = full
-    }
+    fun onLocationChange(v: String) { _location.value = v }
 
     fun onStartDateSelected(epochMillis: Long) { _startDate.value = epochMillis }
     fun onEndDateSelected(epochMillis: Long) { _endDate.value = epochMillis }
@@ -112,7 +106,7 @@ class AddMissionViewModel @Inject constructor(
         val errs = mutableListOf<String>()
         if (title.value.isBlank()) errs.add("Le titre est requis")
         if (description.value.isBlank()) errs.add("La description est requise")
-        if (locationFull.value.isBlank()) errs.add("La localisation est requise")
+        if (location.value.isBlank()) errs.add("La localisation est requise")
         val s = startDate.value
         val e = endDate.value
         val today = System.currentTimeMillis()
@@ -158,7 +152,7 @@ class AddMissionViewModel @Inject constructor(
                 id = "",
                 title = title.value,
                 description = description.value,
-                location = locationFull.value,
+                location = _location.value,
                 startDate = startTimestamp,
                 endDate = endTimestamp,
                 status = com.example.healthconnect.data.models.MissionStatus.PLANNED,

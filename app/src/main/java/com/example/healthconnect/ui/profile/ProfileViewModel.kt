@@ -38,7 +38,7 @@ class ProfileViewModel @Inject constructor(
             if (user == null) {
                 // Pour test local : forcer user_1 si aucun utilisateur n'est défini
                 Log.d("ProfileViewModel", "Aucun utilisateur courant trouvé, forçage vers user_1 pour test")
-                userRepository.setCurrentUser("user_2")
+                userRepository.setCurrentUser("admin_1")
                 user = userRepository.getCurrentUser()
             } else {
                 Log.d("ProfileViewModel", "Utilisateur courant trouvé: ${user.uid}")

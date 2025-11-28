@@ -9,4 +9,9 @@ interface MissionRepository {
     suspend fun addMission(mission: Mission): Boolean
     suspend fun updateMission(mission: Mission): Boolean
     suspend fun deleteMission(missionId: String): Boolean
+
+    suspend fun verifyMission(missionId: String): Unit
+
+    // Reject a user (sets status to REJECTED)
+    suspend fun rejectMission(missionId: String): Unit
 }

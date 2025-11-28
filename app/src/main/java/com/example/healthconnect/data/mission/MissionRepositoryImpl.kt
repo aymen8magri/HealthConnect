@@ -1,7 +1,9 @@
 package com.example.healthconnect.data.mission
 
 import com.example.healthconnect.data.models.Mission
+import com.example.healthconnect.data.models.Status
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -69,4 +71,23 @@ class MissionRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun verifyMission(missionId: String): Unit {
+        var mission = getMissionById(missionId)
+        if(mission!=null){
+            mission.validationStatus = Status.VALIDATED
+            updateMission(mission)
+
+        }
+
+    }
+
+    override suspend fun rejectMission(missionId: String): Unit {
+        var mission = getMissionById(missionId)
+        if(mission!=null){
+            mission.validationStatus = Status.REJECTED
+            updateMission(mission)
+        }
+    }
+
 }

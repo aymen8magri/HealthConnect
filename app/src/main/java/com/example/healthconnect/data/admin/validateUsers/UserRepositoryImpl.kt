@@ -22,7 +22,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             adresse = "Rue de la Santé, Tunis",
             bio = "Médecin généraliste avec 10 ans d'expérience.",
             image = "https://picsum.photos/seed/medecin1/200/200",
-            status = Status.PENDING,
+            statusRole = Status.PENDING,
             cabinet = "Cabinet A",
             specialiteMedecin = Specialite.GENERALISTE,
             carteService = "https://picsum.photos/seed/carte1/400/300"
@@ -37,7 +37,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             adresse = "Avenue Habib Bourguiba",
             bio = "Coordinateur d'associations.",
             image = "https://picsum.photos/seed/coord1/200/200",
-            status = Status.VALIDATED,
+            statusRole = Status.VALIDATED,
             association = "Association Espoir",
             posteAsso = "Président",
             carteAssociation = "https://picsum.photos/seed/assoc1/400/300"
@@ -52,7 +52,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             adresse = "Rue Centrale",
             bio = "Volontaire enthousiaste.",
             image = "https://picsum.photos/seed/vol1/200/200",
-            status = Status.REJECTED
+            statusRole = Status.REJECTED
         ),
         User(
             uid = "user_4",
@@ -64,7 +64,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             adresse = "Rue Ibn Sina",
             bio = "Cardiologue spécialisé.",
             image = "https://picsum.photos/seed/medecin2/200/200",
-            status = Status.VALIDATED,
+            statusRole = Status.VALIDATED,
             cabinet = "Cabinet Médical Central",
             specialiteMedecin = Specialite.CARDIOLOGUE,
             carteService = "https://picsum.photos/seed/carte2/400/300"
@@ -80,7 +80,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             adresse = "Siège",
             bio = "Compte administrateur de test.",
             image = "https://picsum.photos/seed/admin/200/200",
-            status = Status.VALIDATED
+            statusRole = Status.VALIDATED
         )
     )
 
@@ -127,7 +127,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
         val idx = usersList.indexOfFirst { it.uid == userId }
         if (idx >= 0) {
             val u = usersList[idx]
-            usersList[idx] = u.copy(status = Status.VALIDATED)
+            usersList[idx] = u.copy(statusRole = Status.VALIDATED)
         }
         return true
     }
@@ -136,7 +136,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
         val idx = usersList.indexOfFirst { it.uid == userId }
         if (idx >= 0) {
             val u = usersList[idx]
-            usersList[idx] = u.copy(status = Status.REJECTED)
+            usersList[idx] = u.copy(statusRole = Status.REJECTED)
         }
         return true
     }

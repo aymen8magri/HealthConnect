@@ -55,7 +55,7 @@ fun AddMissionScreen(
     val context = LocalContext.current
     val title by viewModel.title.collectAsState()
     val description by viewModel.description.collectAsState()
-    val locationDisplay by viewModel.locationDisplay.collectAsState()
+    val location by viewModel.location.collectAsState()
     val startDate by viewModel.startDate.collectAsState()
     val endDate by viewModel.endDate.collectAsState()
     val photoUri by viewModel.photoUri.collectAsState()
@@ -66,6 +66,16 @@ fun AddMissionScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val saved by viewModel.saved.collectAsState()
 
+    // Track touched/submitted state for each field
+    var isFormSubmitted by remember { mutableStateOf(false) }
+    var isTitleTouched by remember { mutableStateOf(false) }
+    var isDescriptionTouched by remember { mutableStateOf(false) }
+    var isLocationTouched by remember { mutableStateOf(false) }
+    var isStartDateTouched by remember { mutableStateOf(false) }
+    var isEndDateTouched by remember { mutableStateOf(false) }
+    var isPhotoTouched by remember { mutableStateOf(false) }
+    val taskTouched = remember { mutableStateMapOf<String, Boolean>() }
+
     val blueDark = colorResource(R.color.blue_dark)
     val blueMedium = colorResource(R.color.blue_medium)
     val greenTeal = colorResource(R.color.green_teal)
@@ -75,13 +85,15 @@ fun AddMissionScreen(
     // Image picker
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         viewModel.onPhotoSelected(uri)
-        viewModel.validateAll()
+        isPhotoTouched = true
+        if (isFormSubmitted) {
+            viewModel.validateAll()
+        }
     }
 
     // Date pickers with validation
     val calendar = Calendar.getInstance()
     val today = startOfDay(System.currentTimeMillis())
-
     val datePickerStart = remember {
         DatePickerDialog(
             context,
@@ -89,7 +101,10 @@ fun AddMissionScreen(
                 val cal = Calendar.getInstance()
                 cal.set(year, month, dayOfMonth, 0, 0, 0)
                 viewModel.onStartDateSelected(cal.timeInMillis)
-                viewModel.validateAll()
+                isStartDateTouched = true
+                if (isFormSubmitted) {
+                    viewModel.validateAll()
+                }
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
@@ -106,60 +121,14 @@ fun AddMissionScreen(
                 val cal = Calendar.getInstance()
                 cal.set(year, month, dayOfMonth, 0, 0, 0)
                 viewModel.onEndDateSelected(cal.timeInMillis)
-                viewModel.validateAll()
+                isEndDateTouched = true
+                if (isFormSubmitted) {
+                    viewModel.validateAll()
+                }
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
-        )
-    }
-
-    // Location picker dialog
-    var showLocationDialog by remember { mutableStateOf(false) }
-    var locCountry by remember { mutableStateOf("") }
-    var locCity by remember { mutableStateOf("") }
-    var locFullDetails by remember { mutableStateOf("") }
-
-    if (showLocationDialog) {
-        AlertDialog(
-            onDismissRequest = { showLocationDialog = false },
-            title = { Text("Sélectionner la localisation", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = locCountry,
-                        onValueChange = { locCountry = it },
-                        label = { Text("Pays") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = locCity,
-                        onValueChange = { locCity = it },
-                        label = { Text("Ville") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = locFullDetails,
-                        onValueChange = { locFullDetails = it },
-                        label = { Text("Détails (adresse, coords)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val display = "${locCountry}, ${locCity}".trim().trim(',')
-                    val full = "${locCountry}, ${locCity} - ${locFullDetails}".trim().trim(',')
-                    viewModel.onLocationSelected(display, full)
-                    viewModel.validateAll()
-                    showLocationDialog = false
-                }) { Text("Valider", color = greenTeal, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLocationDialog = false }) {
-                    Text("Annuler", color = blueDark)
-                }
-            }
         )
     }
 
@@ -173,9 +142,21 @@ fun AddMissionScreen(
         }
     }
 
-    // Helper to get error for a field
-    fun getFieldErrors(fieldName: String): List<String> {
+    // Helper to get error for a field with touch validation
+    fun getFieldErrors(fieldName: String, isFieldTouched: Boolean): List<String> {
+        // Only show errors if form is submitted or field has been touched
+        if (!isFormSubmitted && !isFieldTouched) {
+            return emptyList()
+        }
         return errors.filter { it.contains(fieldName, ignoreCase = true) }
+    }
+
+    // Helper for task errors
+    fun getTaskErrors(taskId: String): List<String> {
+        if (!isFormSubmitted && !taskTouched.getOrDefault(taskId, false)) {
+            return emptyList()
+        }
+        return errors.filter { it.contains("tâche", ignoreCase = true) && it.contains(taskId) }
     }
 
     Scaffold(
@@ -203,16 +184,34 @@ fun AddMissionScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // --- TITRE ---
-            Text("Titre", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
-            val titleErrors = getFieldErrors("titre")
+            Text(
+                "Titre",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = blueDark
+            )
+            val titleErrors = getFieldErrors("titre", isTitleTouched)
             OutlinedTextField(
                 value = title,
-                onValueChange = { viewModel.onTitleChange(it) },
+                onValueChange = {
+                    viewModel.onTitleChange(it)
+                    isTitleTouched = true
+                    if (isFormSubmitted) {
+                        viewModel.validateAll()
+                    }
+                },
                 label = { Text("Ex: Campagne de vaccination") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White, RoundedCornerShape(8.dp))
-                    .onFocusChanged { if (!it.isFocused) viewModel.validateAll() },
+                    .onFocusChanged {
+                        if (!it.isFocused && it.isFocused) {
+                            isTitleTouched = true
+                            if (isFormSubmitted) {
+                                viewModel.validateAll()
+                            }
+                        }
+                    },
                 shape = RoundedCornerShape(8.dp),
                 isError = titleErrors.isNotEmpty(),
                 singleLine = true
@@ -222,17 +221,35 @@ fun AddMissionScreen(
             }
 
             // --- DESCRIPTION ---
-            Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
-            val descErrors = getFieldErrors("description")
+            Text(
+                "Description",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = blueDark
+            )
+            val descErrors = getFieldErrors("description", isDescriptionTouched)
             OutlinedTextField(
                 value = description,
-                onValueChange = { viewModel.onDescriptionChange(it) },
+                onValueChange = {
+                    viewModel.onDescriptionChange(it)
+                    isDescriptionTouched = true
+                    if (isFormSubmitted) {
+                        viewModel.validateAll()
+                    }
+                },
                 label = { Text("Détails sur la mission...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
                     .background(Color.White, RoundedCornerShape(8.dp))
-                    .onFocusChanged { if (!it.isFocused) viewModel.validateAll() },
+                    .onFocusChanged {
+                        if (!it.isFocused && it.isFocused) {
+                            isDescriptionTouched = true
+                            if (isFormSubmitted) {
+                                viewModel.validateAll()
+                            }
+                        }
+                    },
                 shape = RoundedCornerShape(8.dp),
                 isError = descErrors.isNotEmpty()
             )
@@ -241,15 +258,23 @@ fun AddMissionScreen(
             }
 
             // --- DATES ---
-            Text("Dates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
+            Text(
+                "Dates",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = blueDark
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    val startErrors = getFieldErrors("début")
+                    val startErrors = getFieldErrors("début", isStartDateTouched)
                     OutlinedButton(
-                        onClick = { datePickerStart.show() },
+                        onClick = {
+                            datePickerStart.show()
+                            isStartDateTouched = true
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
@@ -273,12 +298,13 @@ fun AddMissionScreen(
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
-                    val endErrors = getFieldErrors("fin")
+                    val endErrors = getFieldErrors("fin", isEndDateTouched)
                     OutlinedButton(
                         onClick = {
                             // ensure end date cannot be before selected startDate (or today)
                             datePickerEnd.datePicker.minDate = startDate ?: today
                             datePickerEnd.show()
+                            isEndDateTouched = true
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -304,30 +330,50 @@ fun AddMissionScreen(
             }
 
             // --- LOCALISATION ---
-            Text("Localisation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
-            val locErrors = getFieldErrors("localisation")
+            Text(
+                "Localisation",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = blueDark
+            )
+            val locErrors = getFieldErrors("localisation", isLocationTouched)
             OutlinedTextField(
-                value = locationDisplay,
-                onValueChange = {},
-                label = { Text("Sélectionner une localisation") },
+                value = location,
+                onValueChange = {
+                    viewModel.onLocationChange(it)
+                    isLocationTouched = true
+                    if (isFormSubmitted) {
+                        viewModel.validateAll()
+                    }
+                },
+                label = { "Entrez la localisation" },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showLocationDialog = true }
-                    .background(Color.White, RoundedCornerShape(8.dp)),
+                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .onFocusChanged {
+                        if (!it.isFocused && it.isFocused) {
+                            isLocationTouched = true
+                            if (isFormSubmitted) {
+                                viewModel.validateAll()
+                            }
+                        }
+                    },
                 shape = RoundedCornerShape(8.dp),
-                readOnly = true,
                 isError = locErrors.isNotEmpty(),
-                trailingIcon = {
-                    Icon(Icons.Default.Image, contentDescription = null, tint = blueMedium)
-                }
+                singleLine = true
             )
             if (locErrors.isNotEmpty()) {
                 ErrorMessage(locErrors.first())
             }
 
             // --- PHOTO ---
-            Text("Photo de la mission", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
-            val photoErrors = getFieldErrors("image")
+            Text(
+                "Photo de la mission",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = blueDark
+            )
+            val photoErrors = getFieldErrors("image", isPhotoTouched)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -340,7 +386,10 @@ fun AddMissionScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
-                            onClick = { launcher.launch("image/*") },
+                            onClick = {
+                                launcher.launch("image/*")
+                                isPhotoTouched = true
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = greenTeal),
                             shape = RoundedCornerShape(8.dp)
                         ) {
@@ -367,7 +416,12 @@ fun AddMissionScreen(
             }
 
             // --- TÂCHES ---
-            Text("Tâches", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
+            Text(
+                "Tâches",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = blueDark
+            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -375,7 +429,12 @@ fun AddMissionScreen(
                 Text("Ajouter des tâches pour les participants", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.weight(1f))
                 FloatingActionButton(
-                    onClick = { viewModel.addEmptyTask(); viewModel.validateAll() },
+                    onClick = {
+                        viewModel.addEmptyTask()
+                        if (isFormSubmitted) {
+                            viewModel.validateAll()
+                        }
+                    },
                     containerColor = greenLight,
                     contentColor = Color.White,
                     modifier = Modifier.size(40.dp)
@@ -383,7 +442,6 @@ fun AddMissionScreen(
                     Icon(Icons.Default.Add, contentDescription = "Ajouter tâche")
                 }
             }
-
             if (tasks.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -395,15 +453,26 @@ fun AddMissionScreen(
                     Text("Aucune tâche ajoutée", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                 }
             }
-
             tasks.forEachIndexed { index, task ->
                 TaskItem(
                     taskIndex = index + 1,
                     task = task,
-                    onDelete = { viewModel.removeTask(task.idTask); viewModel.validateAll() },
-                    onChange = { role, nbr, desc -> viewModel.updateTask(task.idTask, role, nbr, desc); viewModel.validateAll() },
+                    onDelete = {
+                        viewModel.removeTask(task.idTask)
+                        if (isFormSubmitted) {
+                            viewModel.validateAll()
+                        }
+                    },
+                    onChange = { role, nbr, desc ->
+                        viewModel.updateTask(task.idTask, role, nbr, desc)
+                        taskTouched[task.idTask] = true
+                        if (isFormSubmitted) {
+                            viewModel.validateAll()
+                        }
+                    },
                     blueMedium = blueMedium,
-                    greenTeal = greenTeal
+                    greenTeal = greenTeal,
+                    showErrors = isFormSubmitted || taskTouched.getOrDefault(task.idTask, false)
                 )
             }
 
@@ -424,7 +493,15 @@ fun AddMissionScreen(
 
             // --- BOUTON ENREGISTRER ---
             Button(
-                onClick = { viewModel.saveMission() },
+                onClick = {
+                    isFormSubmitted = true
+                    viewModel.validateAll()
+                    if (errors.isEmpty()) {
+                        viewModel.saveMission()
+                    } else {
+                        Toast.makeText(context, "Veuillez corriger les erreurs avant de sauvegarder", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 enabled = !isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -438,7 +515,6 @@ fun AddMissionScreen(
                     Text("Enregistrer la mission", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
-
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -448,7 +524,6 @@ fun AddMissionScreen(
 fun InfoBox(label: String, value: String, color: Color) {
     Column(
         modifier = Modifier
-
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -485,11 +560,25 @@ fun TaskItem(
     onDelete: () -> Unit,
     onChange: (role: Roles, nbr: Int, desc: String) -> Unit,
     blueMedium: Color,
-    greenTeal: Color
+    greenTeal: Color,
+    showErrors: Boolean = false
 ) {
     var role by remember { mutableStateOf(task.roleType) }
     var nbr by remember { mutableStateOf(task.nbrMaxParticipants.toString()) }
     var desc by remember { mutableStateOf(task.description) }
+
+    // Validate task fields locally for immediate feedback
+    val nbrError = remember { derivedStateOf {
+        if (showErrors && (nbr.isEmpty() || nbr.toIntOrNull() == null || nbr.toInt() <= 0)) {
+            "Le nombre de participants doit être supérieur à 0"
+        } else null
+    } }
+
+    val descError = remember { derivedStateOf {
+        if (showErrors && desc.isEmpty()) {
+            "La description de la tâche est requise"
+        } else null
+    } }
 
     Card(
         modifier = Modifier
@@ -522,7 +611,7 @@ fun TaskItem(
             )
 
             Text("Nombre max de participants", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = blueMedium)
-            /*OutlinedTextField(
+            OutlinedTextField(
                 value = nbr,
                 onValueChange = {
                     val filtered = it.filter { ch -> ch.isDigit() }
@@ -531,9 +620,13 @@ fun TaskItem(
                 },
                 label = { Text("Ex: 5") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardType = KeyboardType.Number,
-                shape = RoundedCornerShape(8.dp)
-            )*/
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(8.dp),
+                isError = nbrError.value != null
+            )
+            if (nbrError.value != null) {
+                ErrorMessage(nbrError.value!!, fontSize = 12.sp)
+            }
 
             Text("Description", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = blueMedium)
             OutlinedTextField(
@@ -543,8 +636,12 @@ fun TaskItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                isError = descError.value != null
             )
+            if (descError.value != null) {
+                ErrorMessage(descError.value!!, fontSize = 12.sp)
+            }
         }
     }
 }
@@ -585,7 +682,9 @@ private fun formatDate(epochMillis: Long): String {
 }
 
 private fun startOfDay(epoch: Long): Long {
-    val cal = Calendar.getInstance().apply { timeInMillis = epoch }
+    val cal = Calendar.getInstance().apply {
+        timeInMillis = epoch
+    }
     cal.set(Calendar.HOUR_OF_DAY, 0)
     cal.set(Calendar.MINUTE, 0)
     cal.set(Calendar.SECOND, 0)

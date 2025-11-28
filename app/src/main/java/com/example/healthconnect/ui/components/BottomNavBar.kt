@@ -21,7 +21,7 @@ fun BottomNavBar(navController: NavController, isAdmin: Boolean = false) {
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar {
-        if (isAdmin) {
+        if (true) {
             // Admin: Utilisateurs, Missions, Profil
             NavigationBarItem(
                 icon = { Icon(imageVector = Icons.Default.Group, contentDescription = "Utilisateurs") },
