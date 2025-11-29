@@ -15,11 +15,16 @@ import java.util.*
 import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 
 @HiltViewModel
 class AddMissionViewModel @Inject constructor(
-    private val missionRepository: MissionRepository
+    private val missionRepository: MissionRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
+    // MODIFIÉ: Garde une trace de la mission en cours d'édition et son ID
+    private var currentMission: Mission? = null
+    private var currentMissionId: String? = null
 
     private val _title = MutableStateFlow("")
     val title: StateFlow<String> = _title.asStateFlow()
@@ -94,6 +99,25 @@ class AddMissionViewModel @Inject constructor(
         }
         recomputeCounts()
     }
+// ... (au début de la classe AddMissionViewModel)
+
+    // NOUVELLE FONCTION : Pour nettoyer le formulaire avant un nouvel ajout
+    fun resetState() {
+        currentMission = null
+        currentMissionId = null
+        _title.value = ""
+        _description.value = ""
+        _location.value = ""
+        _startDate.value = null
+        _endDate.value = null
+        _photoUri.value = null
+        _tasks.value = emptyList()
+        _errors.value = emptyList()
+        _saved.value = null // Très important pour que le Toast ne se déclenche pas à nouveau
+        recomputeCounts()
+    }
+
+// ... (le reste du ViewModel reste inchangé)
 
     private fun recomputeCounts() {
         val med = _tasks.value.filter { it.roleType == Roles.MEDECIN }.sumOf { it.nbrMaxParticipants }
@@ -111,11 +135,11 @@ class AddMissionViewModel @Inject constructor(
         val e = endDate.value
         val today = System.currentTimeMillis()
         if (s == null) errs.add("La date de début est requise")
-        else if (s < startOfDay(today)) errs.add("La date de début ne peut pas précéder aujourd'hui")
+        // En mode édition, la date de début peut être dans le passé
+        else if (currentMissionId == null && s < startOfDay(today)) errs.add("La date de début ne peut pas précéder aujourd'hui")
         if (e == null) errs.add("La date de fin est requise")
         else if (s != null && e < s) errs.add("La date de fin ne peut pas précéder la date de début")
         if (tasks.value.isEmpty()) errs.add("Au moins une tâche est requise")
-        // ensure each task fields
         tasks.value.forEachIndexed { idx, t ->
             if (t.description.isBlank()) errs.add("La description est requise pour la tâche ${idx + 1}")
             if (t.nbrMaxParticipants <= 0) errs.add("Le nombre max de participants doit être > 0 pour la tâche ${idx + 1}")
@@ -135,39 +159,127 @@ class AddMissionViewModel @Inject constructor(
         return cal.timeInMillis
     }
 
-    fun canSave(): Boolean {
-        // permitted if no validation errors
-        return validateAll()
-    }
-
-    fun saveMission() {
+    // NOUVEAU: Fonction pour charger les données de la mission à éditer
+    fun loadMissionForEdit(missionId: String) {
+        if (missionId == currentMissionId) return // Déjà chargé
+        currentMissionId = missionId
         viewModelScope.launch {
-            if (!validateAll()) return@launch
             _isSaving.value = true
-
-            val startTimestamp = startDate.value?.let { Timestamp(Date(it)) }
-            val endTimestamp = endDate.value?.let { Timestamp(Date(it)) }
-
-            val mission = Mission(
-                id = "",
-                title = title.value,
-                description = description.value,
-                location = _location.value,
-                startDate = startTimestamp,
-                endDate = endTimestamp,
-                status = com.example.healthconnect.data.models.MissionStatus.PLANNED,
-                validationStatus = com.example.healthconnect.data.models.Status.PENDING,
-                nbrMedecins = nbrMedecins.value,
-                nbrVolontaires = nbrVolontaires.value,
-                taskIds = _tasks.value.map { it.idTask },
-                participantIds = emptyList(),
-                photoMission = photoUri.value ?: "",
-                listTasks = emptyList()
-            )
-            val res = missionRepository.addMission(mission)
-            _isSaving.value = false
-            _saved.value = res
+            try {
+                val mission = missionRepository.getMissionById(missionId)
+                if (mission != null) {
+                    currentMission = mission // Stocker la mission originale
+                    _title.value = mission.title ?: ""
+                    _description.value = mission.description ?: ""
+                    _location.value = mission.location ?: ""
+                    _startDate.value = mission.startDate?.toDate()?.time
+                    _endDate.value = mission.endDate?.toDate()?.time
+                    _photoUri.value = mission.photoMission
+                    // NOTE: La logique pour charger les tâches associées (listTasks) doit être implémentée
+                    @Suppress("UNCHECKED_CAST")
+                    _tasks.value = (mission.listTasks as? List<Task>) ?: emptyList()
+                    recomputeCounts()
+                    recomputeCounts()
+                } else {
+                    _errors.value = listOf("Impossible de trouver la mission à modifier.")
+                }
+            } catch (e: Exception) {
+                _errors.value = listOf("Erreur de chargement: ${e.message}")
+            } finally {
+                _isSaving.value = false
+            }
         }
     }
-}
 
+    // MODIFIÉ: Renommée et transformée en dispatcher
+// Dans AddMissionViewModel.kt
+
+    fun saveOrUpdateMission(): Boolean {
+        // La validation en premier
+        if (!validateAll()) {
+            return false  // ❗ On retourne false si la validation échoue
+        }
+
+        // Si la validation est OK → sauvegarde
+        viewModelScope.launch {
+            if (currentMissionId == null) {
+                addMission()
+            } else {
+                updateMission()
+            }
+        }
+
+        return true  // ❗ Validation réussie
+    }
+
+
+
+    private suspend fun addMission() {
+        _isSaving.value = true
+        val startTimestamp = startDate.value?.let { Timestamp(Date(it)) }
+        val endTimestamp = endDate.value?.let { Timestamp(Date(it)) }
+
+        val coordinatorId = auth.currentUser?.uid
+        if (coordinatorId == null) {
+            _errors.value = _errors.value + "L'utilisateur n'est pas authentifié."
+            _isSaving.value = false
+            return
+        }
+
+        // Crée un nouvel ID unique pour la mission
+        val newMissionId = UUID.randomUUID().toString()
+
+        val mission = Mission(
+            id = newMissionId, // Utilise le nouvel ID
+            title = title.value,
+            description = description.value,
+            location = location.value,
+            startDate = startTimestamp,
+            endDate = endTimestamp,
+            status = com.example.healthconnect.data.models.MissionStatus.PLANNED,
+            validationStatus = com.example.healthconnect.data.models.Status.PENDING,
+            nbrMedecins = nbrMedecins.value,
+            nbrVolontaires = nbrVolontaires.value,
+            taskIds = _tasks.value.map { it.idTask },
+            participantIds = emptyList(),
+            photoMission = photoUri.value ?: "",
+            listTasks = _tasks.value.map { it.copy(missionId = newMissionId) }, // Assigne l'ID de la mission aux tâches
+            coordinatorId = coordinatorId
+        )
+        val res = missionRepository.addMission(mission)
+        _isSaving.value = false
+        _saved.value = res
+    }
+
+
+    private suspend fun updateMission() {
+        val missionId = currentMissionId ?: return
+        val originalMission = currentMission ?: return
+
+        _isSaving.value = true
+        val startTimestamp = startDate.value?.let { Timestamp(Date(it)) }
+        val endTimestamp = endDate.value?.let { Timestamp(Date(it)) }
+
+        val updatedMission = originalMission.copy(
+            title = title.value,
+            description = description.value,
+            location = location.value,
+            startDate = startTimestamp,
+            endDate = endTimestamp,
+            photoMission = photoUri.value ?: "",
+            listTasks = _tasks.value.map { it.copy(missionId = missionId) },
+            // CORRECTION : Supprimez le type explicite <String> qui est mal placé.
+            // Le compilateur peut maintenant déduire correctement que le résultat est une List<String>.
+            taskIds = _tasks.value.map { it.idTask },
+            nbrMedecins = nbrMedecins.value,
+            nbrVolontaires = nbrVolontaires.value
+        )
+
+        val res = missionRepository.updateMission(updatedMission)
+
+        _isSaving.value = false
+        _saved.value = res
+    }
+
+
+}

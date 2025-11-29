@@ -7,7 +7,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.core.util.Predicate
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -50,8 +50,26 @@ import java.util.Locale
 @Composable
 fun AddMissionScreen(
     navController: NavController,
+    missionId: String? = null,
     viewModel: AddMissionViewModel = hiltViewModel()
 ) {
+    // --- GESTION DU CYCLE DE VIE ---
+    LaunchedEffect(missionId) {
+        if (missionId != null) {
+            // Mode "Modifier" : charger les données de la mission.
+            viewModel.loadMissionForEdit(missionId)
+        } else {
+            // Mode "Ajouter" : s'assurer que le formulaire est vide pour éviter les bugs.
+            viewModel.resetState()
+        }
+    }
+
+    // --- VARIABLES DYNAMIQUES POUR L'UI ---
+    val isEditMode = missionId != null
+    val screenTitle = if (isEditMode) "Modifier la Mission" else "Ajouter une Mission"
+    val buttonText = if (isEditMode) "Mettre à jour" else "Enregistrer la mission"
+
+    // --- COLLECTE DES ETATS ---
     val context = LocalContext.current
     val title by viewModel.title.collectAsState()
     val description by viewModel.description.collectAsState()
@@ -66,7 +84,6 @@ fun AddMissionScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val saved by viewModel.saved.collectAsState()
 
-    // Track touched/submitted state for each field
     var isFormSubmitted by remember { mutableStateOf(false) }
     var isTitleTouched by remember { mutableStateOf(false) }
     var isDescriptionTouched by remember { mutableStateOf(false) }
@@ -82,7 +99,6 @@ fun AddMissionScreen(
     val greenLight = colorResource(R.color.green_light)
     val yellowLight = colorResource(R.color.yellow_light)
 
-    // Image picker
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         viewModel.onPhotoSelected(uri)
         isPhotoTouched = true
@@ -91,80 +107,59 @@ fun AddMissionScreen(
         }
     }
 
-    // Date pickers with validation
     val calendar = Calendar.getInstance()
     val today = startOfDay(System.currentTimeMillis())
-    val datePickerStart = remember {
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                val cal = Calendar.getInstance()
-                cal.set(year, month, dayOfMonth, 0, 0, 0)
-                viewModel.onStartDateSelected(cal.timeInMillis)
-                isStartDateTouched = true
-                if (isFormSubmitted) {
-                    viewModel.validateAll()
-                }
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).apply {
+
+    val datePickerStart = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val cal = Calendar.getInstance().apply { set(year, month, dayOfMonth, 0, 0, 0) }
+            viewModel.onStartDateSelected(cal.timeInMillis)
+            isStartDateTouched = true
+            if (isFormSubmitted) viewModel.validateAll()
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).apply {
+        // En mode ajout, la date ne peut pas être antérieure à aujourd'hui.
+        if (!isEditMode) {
             datePicker.minDate = today
         }
     }
 
-    val datePickerEnd = remember {
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                val cal = Calendar.getInstance()
-                cal.set(year, month, dayOfMonth, 0, 0, 0)
-                viewModel.onEndDateSelected(cal.timeInMillis)
-                isEndDateTouched = true
-                if (isFormSubmitted) {
-                    viewModel.validateAll()
-                }
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-    }
+    val datePickerEnd = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val cal = Calendar.getInstance().apply { set(year, month, dayOfMonth, 0, 0, 0) }
+            viewModel.onEndDateSelected(cal.timeInMillis)
+            isEndDateTouched = true
+            if (isFormSubmitted) viewModel.validateAll()
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
 
-    // Observe saved
     LaunchedEffect(saved) {
         if (saved == true) {
-            Toast.makeText(context, "Mission enregistrée avec succès", Toast.LENGTH_SHORT).show()
+            val message = if (isEditMode) "Mission mise à jour avec succès" else "Mission enregistrée avec succès"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             navController.popBackStack()
         } else if (saved == false) {
             Toast.makeText(context, "Erreur lors de l'enregistrement", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Helper to get error for a field with touch validation
     fun getFieldErrors(fieldName: String, isFieldTouched: Boolean): List<String> {
-        // Only show errors if form is submitted or field has been touched
-        if (!isFormSubmitted && !isFieldTouched) {
-            return emptyList()
-        }
+        if (!isFormSubmitted && !isFieldTouched) return emptyList()
         return errors.filter { it.contains(fieldName, ignoreCase = true) }
-    }
-
-    // Helper for task errors
-    fun getTaskErrors(taskId: String): List<String> {
-        if (!isFormSubmitted && !taskTouched.getOrDefault(taskId, false)) {
-            return emptyList()
-        }
-        return errors.filter { it.contains("tâche", ignoreCase = true) && it.contains(taskId) }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Ajouter une mission", fontWeight = FontWeight.Bold, color = Color.White)
-                },
+                title = { Text(screenTitle, fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour", tint = Color.White)
@@ -184,124 +179,62 @@ fun AddMissionScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // --- TITRE ---
-            Text(
-                "Titre",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = blueDark
-            )
+            Text("Titre", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
             val titleErrors = getFieldErrors("titre", isTitleTouched)
             OutlinedTextField(
                 value = title,
-                onValueChange = {
-                    viewModel.onTitleChange(it)
-                    isTitleTouched = true
-                    if (isFormSubmitted) {
-                        viewModel.validateAll()
-                    }
-                },
+                onValueChange = { viewModel.onTitleChange(it); isTitleTouched = true; if (isFormSubmitted) viewModel.validateAll() },
                 label = { Text("Ex: Campagne de vaccination") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .onFocusChanged {
-                        if (!it.isFocused && it.isFocused) {
-                            isTitleTouched = true
-                            if (isFormSubmitted) {
-                                viewModel.validateAll()
-                            }
-                        }
-                    },
+                    .background(Color.White, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
                 isError = titleErrors.isNotEmpty(),
                 singleLine = true
             )
-            if (titleErrors.isNotEmpty()) {
-                ErrorMessage(titleErrors.first())
-            }
+            if (titleErrors.isNotEmpty()) ErrorMessage(titleErrors.first())
 
             // --- DESCRIPTION ---
-            Text(
-                "Description",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = blueDark
-            )
+            Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
             val descErrors = getFieldErrors("description", isDescriptionTouched)
             OutlinedTextField(
                 value = description,
-                onValueChange = {
-                    viewModel.onDescriptionChange(it)
-                    isDescriptionTouched = true
-                    if (isFormSubmitted) {
-                        viewModel.validateAll()
-                    }
-                },
+                onValueChange = { viewModel.onDescriptionChange(it); isDescriptionTouched = true; if (isFormSubmitted) viewModel.validateAll() },
                 label = { Text("Détails sur la mission...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .onFocusChanged {
-                        if (!it.isFocused && it.isFocused) {
-                            isDescriptionTouched = true
-                            if (isFormSubmitted) {
-                                viewModel.validateAll()
-                            }
-                        }
-                    },
+                    .background(Color.White, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
                 isError = descErrors.isNotEmpty()
             )
-            if (descErrors.isNotEmpty()) {
-                ErrorMessage(descErrors.first())
-            }
+            if (descErrors.isNotEmpty()) ErrorMessage(descErrors.first())
 
             // --- DATES ---
-            Text(
-                "Dates",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = blueDark
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Text("Dates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     val startErrors = getFieldErrors("début", isStartDateTouched)
                     OutlinedButton(
-                        onClick = {
-                            datePickerStart.show()
-                            isStartDateTouched = true
-                        },
+                        onClick = { datePickerStart.show(); isStartDateTouched = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                             .background(Color.White, RoundedCornerShape(8.dp)),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = if (startErrors.isEmpty()) blueMedium else Color.Red
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (startErrors.isEmpty()) blueMedium else Color.Red),
                         border = BorderStroke(1.dp, if (startErrors.isEmpty()) blueMedium else Color.Red)
                     ) {
                         Icon(imageVector = Icons.Default.Event, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            if (startDate == null) "Date début" else formatDate(startDate!!),
-                            fontSize = 14.sp
-                        )
+                        Text(if (startDate == null) "Date début" else formatDate(startDate!!), fontSize = 14.sp)
                     }
-                    if (startErrors.isNotEmpty()) {
-                        ErrorMessage(startErrors.first(), fontSize = 12.sp)
-                    }
+                    if (startErrors.isNotEmpty()) ErrorMessage(startErrors.first(), fontSize = 12.sp)
                 }
-
                 Column(modifier = Modifier.weight(1f)) {
                     val endErrors = getFieldErrors("fin", isEndDateTouched)
                     OutlinedButton(
                         onClick = {
-                            // ensure end date cannot be before selected startDate (or today)
                             datePickerEnd.datePicker.minDate = startDate ?: today
                             datePickerEnd.show()
                             isEndDateTouched = true
@@ -311,69 +244,37 @@ fun AddMissionScreen(
                             .height(56.dp)
                             .background(Color.White, RoundedCornerShape(8.dp)),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = if (endErrors.isEmpty()) blueMedium else Color.Red
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (endErrors.isEmpty()) blueMedium else Color.Red),
                         border = BorderStroke(1.dp, if (endErrors.isEmpty()) blueMedium else Color.Red)
                     ) {
                         Icon(imageVector = Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            if (endDate == null) "Date fin" else formatDate(endDate!!),
-                            fontSize = 14.sp
-                        )
+                        Text(if (endDate == null) "Date fin" else formatDate(endDate!!), fontSize = 14.sp)
                     }
-                    if (endErrors.isNotEmpty()) {
-                        ErrorMessage(endErrors.first(), fontSize = 12.sp)
-                    }
+                    if (endErrors.isNotEmpty()) ErrorMessage(endErrors.first(), fontSize = 12.sp)
                 }
             }
 
             // --- LOCALISATION ---
-            Text(
-                "Localisation",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = blueDark
-            )
+            Text("Localisation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
             val locErrors = getFieldErrors("localisation", isLocationTouched)
             OutlinedTextField(
                 value = location,
-                onValueChange = {
-                    viewModel.onLocationChange(it)
-                    isLocationTouched = true
-                    if (isFormSubmitted) {
-                        viewModel.validateAll()
-                    }
-                },
-                label = { "Entrez la localisation" },
+                onValueChange = { viewModel.onLocationChange(it); isLocationTouched = true; if (isFormSubmitted) viewModel.validateAll() },
+                label = { Text("Entrez la localisation") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .onFocusChanged {
-                        if (!it.isFocused && it.isFocused) {
-                            isLocationTouched = true
-                            if (isFormSubmitted) {
-                                viewModel.validateAll()
-                            }
-                        }
-                    },
+                    .background(Color.White, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
                 isError = locErrors.isNotEmpty(),
                 singleLine = true
             )
-            if (locErrors.isNotEmpty()) {
-                ErrorMessage(locErrors.first())
-            }
+            if (locErrors.isNotEmpty()) ErrorMessage(locErrors.first())
 
             // --- PHOTO ---
-            Text(
-                "Photo de la mission",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = blueDark
-            )
+            Text("Photo de la mission", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueDark)
             val photoErrors = getFieldErrors("image", isPhotoTouched)
+            // ... (Le composant de la photo reste le même)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -411,11 +312,11 @@ fun AddMissionScreen(
                     }
                 }
             }
-            if (photoErrors.isNotEmpty()) {
-                ErrorMessage(photoErrors.first())
-            }
+
+            if (photoErrors.isNotEmpty()) ErrorMessage(photoErrors.first())
 
             // --- TÂCHES ---
+            // ... (La section des tâches reste la même)
             Text(
                 "Tâches",
                 style = MaterialTheme.typography.titleMedium,
@@ -476,7 +377,9 @@ fun AddMissionScreen(
                 )
             }
 
+
             // --- RÉCAPITULATIF ---
+            // ... (Le récapitulatif reste le même)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -490,16 +393,13 @@ fun AddMissionScreen(
                     }
                 }
             }
-
-            // --- BOUTON ENREGISTRER ---
+            // --- BOUTON ENREGISTRER / METTRE À JOUR ---
             Button(
                 onClick = {
                     isFormSubmitted = true
-                    viewModel.validateAll()
-                    if (errors.isEmpty()) {
-                        viewModel.saveMission()
-                    } else {
-                        Toast.makeText(context, "Veuillez corriger les erreurs avant de sauvegarder", Toast.LENGTH_SHORT).show()
+                    val validationPassed = viewModel.saveOrUpdateMission()
+                    if (!validationPassed) {
+                        Toast.makeText(context, "Veuillez corriger les erreurs.", Toast.LENGTH_SHORT).show()
                     }
                 },
                 enabled = !isSaving,
@@ -512,7 +412,7 @@ fun AddMissionScreen(
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                 } else {
-                    Text("Enregistrer la mission", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(buttonText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -520,6 +420,8 @@ fun AddMissionScreen(
     }
 }
 
+// Les composables InfoBox, ErrorMessage, TaskItem, SegmentedRoleSelector et les fonctions formatDate, startOfDay restent inchangés.
+// ... (copiez-collez le reste de vos composables ici)
 @Composable
 fun InfoBox(label: String, value: String, color: Color) {
     Column(
@@ -567,46 +469,48 @@ fun TaskItem(
     var nbr by remember { mutableStateOf(task.nbrMaxParticipants.toString()) }
     var desc by remember { mutableStateOf(task.description) }
 
-    // Validate task fields locally for immediate feedback
-    val nbrError = remember { derivedStateOf {
-        if (showErrors && (nbr.isEmpty() || nbr.toIntOrNull() == null || nbr.toInt() <= 0)) {
-            "Le nombre de participants doit être supérieur à 0"
-        } else null
-    } }
+    // Synchroniser l'état local si la tâche externe change (important pour le chargement en mode édition)
+    LaunchedEffect(task) {
+        role = task.roleType
+        nbr = task.nbrMaxParticipants.toString()
+        desc = task.description
+    }
 
-    val descError = remember { derivedStateOf {
-        if (showErrors && desc.isEmpty()) {
-            "La description de la tâche est requise"
+    val nbrError = remember(showErrors, nbr) {
+        if (showErrors && (nbr.isEmpty() || nbr.toIntOrNull() == null || nbr.toInt() <= 0)) {
+            "Le nombre doit être > 0"
         } else null
-    } }
+    }
+
+    val descError = remember(showErrors, desc) {
+        if (showErrors && desc.isBlank()) {
+            "Description requise"
+        } else null
+    }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(12.dp)),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = if (nbrError != null || descError != null) BorderStroke(1.dp, Color.Red) else null
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text("Tâche $taskIndex", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = blueMedium)
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Supprimer tâche", tint = Color.Red)
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Supprimer tâche", tint = Color.Red.copy(alpha = 0.7f))
                 }
             }
 
             Text("Rôle", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = blueMedium)
             SegmentedRoleSelector(
                 current = role,
-                onSelect = { role = it; onChange(it, nbr.toIntOrNull() ?: 0, desc) },
+                onSelect = { newRole ->
+                    role = newRole
+                    onChange(newRole, nbr.toIntOrNull() ?: 0, desc)
+                },
                 greenTeal = greenTeal
             )
 
@@ -622,26 +526,25 @@ fun TaskItem(
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(8.dp),
-                isError = nbrError.value != null
+                isError = nbrError != null
             )
-            if (nbrError.value != null) {
-                ErrorMessage(nbrError.value!!, fontSize = 12.sp)
-            }
+            if (nbrError != null) ErrorMessage(nbrError, fontSize = 12.sp)
 
             Text("Description", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = blueMedium)
             OutlinedTextField(
                 value = desc,
-                onValueChange = { desc = it; onChange(role, nbr.toIntOrNull() ?: 0, desc) },
+                onValueChange = {
+                    desc = it
+                    onChange(role, nbr.toIntOrNull() ?: 0, desc)
+                },
                 label = { Text("Détails de la tâche...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp),
                 shape = RoundedCornerShape(8.dp),
-                isError = descError.value != null
+                isError = descError != null
             )
-            if (descError.value != null) {
-                ErrorMessage(descError.value!!, fontSize = 12.sp)
-            }
+            if (descError != null) ErrorMessage(descError, fontSize = 12.sp)
         }
     }
 }

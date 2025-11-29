@@ -42,8 +42,17 @@ import java.util.*
 fun MissionsView(
     navController: NavHostController,
     viewModel: MissionViewModel = hiltViewModel(),
+    showMyMissions: Boolean,
     onMissionClick: (String) -> Unit
 ) {
+    LaunchedEffect(key1 = showMyMissions) {
+        if (showMyMissions) {
+            viewModel.loadMissionsForCurrentUser()
+        } else {
+            viewModel.loadMissions()
+        }
+    }
+
     val missions by viewModel.filteredMissions.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedStatus by viewModel.statusFilter.collectAsState()
@@ -327,7 +336,7 @@ fun MissionCard(mission: Mission, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = mission.title?.take(3)?.uppercase() ?: "",
+                    text = mission.title ?: "",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )

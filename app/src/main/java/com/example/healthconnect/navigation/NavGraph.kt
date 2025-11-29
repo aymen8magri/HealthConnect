@@ -14,27 +14,23 @@ import com.example.healthconnect.ui.tasks.TachesScreen
 import com.example.healthconnect.ui.auth.login.LoginScreen
 import com.example.healthconnect.ui.auth.register.RegisterScreen
 import com.example.healthconnect.ui.chatBot.ChatScreen
-import com.example.healthconnect.ui.missiondetail.MissionDetailView // <-- Importez le nouvel écran
-import com.example.healthconnect.ui.missions.MissionsView
+import com.example.healthconnect.ui.missiondetail.MissionDetailView
+import com.example.healthconnect.ui.missions.MissionsView // Assurez-vous que c'est le bon import
 import com.example.healthconnect.ui.profile.ProfileViewContent
 import com.example.healthconnect.ui.missions.AddMissionScreen
 
 // Définissons les routes dans un objet pour éviter les erreurs de frappe
 object AppRoutes {
     const val HOME = "home"
+    // MODIFICATION: Unifiez la route des missions
     const val MISSIONS = "missions"
     const val MISSION_DETAIL = "mission_detail"
-
     const val REGISTER ="register"
-
     const val LOGIN = "login"
-
-    // Admin routes
+    // ... autres routes
     const val USER_LIST = "user_list/{missionId}"
     const val USER_DETAIL = "user_detail"
     const val ADD_MISSION = "add_mission"
-
-    // Profile route
     const val PROFILE = "profile"
 }
 
@@ -49,19 +45,38 @@ fun NavGraph(
         startDestination = AppRoutes.LOGIN,
         modifier = modifier
     ) {
-        // Route pour la liste des missions
-        composable(AppRoutes.MISSIONS) {
+        // --- CORRECTION : Route unifiée pour les missions ---
+        composable(
+            route = "${AppRoutes.MISSIONS}?showMyMissions={showMyMissions}", // Argument optionnel
+            arguments = listOf(navArgument("showMyMissions") {
+                type = NavType.BoolType
+                defaultValue = false // Par défaut, on montre toutes les missions
+            })
+        ) { backStackEntry ->
+            val showMyMissions = backStackEntry.arguments?.getBoolean("showMyMissions") ?: false
+            // Assurez-vous d'utiliser le nom correct de votre Composable ici (ex: MissionsView)
             MissionsView(
                 navController = navController,
-                // On passe la logique de navigation ici
+                showMyMissions = showMyMissions, // Passez l'argument à l'écran
                 onMissionClick = { missionId ->
                     navController.navigate("${AppRoutes.MISSION_DETAIL}/$missionId")
                 }
             )
         }
+
         // Add mission screen
-        composable(AppRoutes.ADD_MISSION) {
-            AddMissionScreen(navController = navController)
+        composable(
+            route = "${AppRoutes.ADD_MISSION}?missionId={missionId}",
+            arguments = listOf(navArgument("missionId") {
+                type = NavType.StringType
+                nullable = true // L'ID est optionnel (nul pour une nouvelle mission)
+            })
+        ) { backStackEntry ->
+            val missionId = backStackEntry.arguments?.getString("missionId")
+            AddMissionScreen(
+                navController = navController,
+                missionId = missionId // Passez l'ID à l'écran
+            )
         }
         // --- NOUVEAU COMPOSABLE POUR L'INSCRIPTION ---
         composable(AppRoutes.REGISTER) {
@@ -76,7 +91,6 @@ fun NavGraph(
             route = "${AppRoutes.MISSION_DETAIL}/{missionId}",
             arguments = listOf(navArgument("missionId") { type = NavType.StringType })
         ) { backStackEntry ->
-            // On récupère l'ID depuis les arguments de la navigation
             val missionId = backStackEntry.arguments?.getString("missionId")
             if (missionId != null) {
                 MissionDetailView( missionId = missionId, navController = navController)
@@ -90,7 +104,7 @@ fun NavGraph(
         composable(AppRoutes.PROFILE) {
             ProfileViewContent(
                 navController = navController,
-                onLogout = onLogout // Passer la fonction à l'écran de profil
+                onLogout = onLogout
             )
         }
 
@@ -100,7 +114,6 @@ fun NavGraph(
             arguments = listOf(navArgument("missionId") { type = NavType.StringType })
         ) { backStackEntry ->
             val missionId = backStackEntry.arguments?.getString("missionId") ?: ""
-
             UserListView(
                 navController = navController,
                 missionId = missionId
@@ -108,7 +121,6 @@ fun NavGraph(
                 navController.navigate("${AppRoutes.USER_DETAIL}/$userId")
             }
         }
-
 
         // Route pour le détail d'un utilisateur
         composable(

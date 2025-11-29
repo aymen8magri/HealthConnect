@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthconnect.data.models.Mission
 import com.example.healthconnect.data.mission.MissionRepository
 import com.example.healthconnect.data.models.MissionStatus
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MissionViewModel @Inject constructor(
-    private val missionRepository: MissionRepository
+    private val missionRepository: MissionRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _allMissions = MutableStateFlow<List<Mission>>(emptyList())
@@ -57,9 +59,7 @@ class MissionViewModel @Inject constructor(
         initialValue = emptyList()
     )
 
-    init {
-        loadMissions()
-    }
+
 
     // 🔥 Nouvelle version Firebase-friendly
     fun loadMissions() {
@@ -82,6 +82,22 @@ class MissionViewModel @Inject constructor(
         }
     }
 
+
+    fun loadMissionsForCurrentUser() {
+        viewModelScope.launch {
+            // Récupérer l'ID de l'utilisateur connecté
+            val currentUserId = auth.currentUser?.uid
+
+            if (currentUserId != null) {
+                // Appeler la fonction du repository qui filtre par ID
+                val userMissions = missionRepository.getMissionsByCoordinatorId(currentUserId)
+                _allMissions.value = userMissions
+            } else {
+                // Gérer le cas où l'utilisateur n'est pas connecté
+                // Vous pouvez émettre un état d'erreur ici
+            }
+        }
+    }
     fun onSearchQueryChange(newQuery: String) {
         _searchQuery.value = newQuery
     }

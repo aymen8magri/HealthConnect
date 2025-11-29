@@ -9,6 +9,7 @@ interface MissionRepository {
     suspend fun addMission(mission: Mission): Boolean
     suspend fun updateMission(mission: Mission): Boolean
     suspend fun deleteMission(missionId: String): Boolean
+    suspend fun getMissionsByCoordinatorId(coordinatorId: String): List<Mission>
 
     suspend fun verifyMission(missionId: String): Unit
 

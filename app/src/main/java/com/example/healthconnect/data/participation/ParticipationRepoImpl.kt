@@ -78,4 +78,17 @@ class ParticipationRepositoryImpl @Inject constructor(
     override suspend fun deleteParticipation(participationId: String) {
         participationCollection.document(participationId).delete().await()
     }
+
+    // Dans ParticipationRepository ou son interface
+
+    // Récupère les participations d'un utilisateur donné pour une mission donnée
+    override suspend fun getParticipationsForUserInMission(userId: String, missionId: String): List<Participation> {
+        return participationCollection
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("missionId", missionId)
+            .get()
+            .await()
+            .toObjects(Participation::class.java)
+    }
+
 }

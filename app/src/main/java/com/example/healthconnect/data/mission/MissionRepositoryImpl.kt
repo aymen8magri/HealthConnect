@@ -41,6 +41,18 @@ class MissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getMissionsByCoordinatorId(coordinatorId: String): List<Mission> {
+        return try {
+            missionCollection
+                .whereEqualTo("coordinatorId", coordinatorId)
+                .get()
+                .await()
+                .toObjects(Mission::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     override suspend fun updateMission(mission: Mission): Boolean {
         return try {
             missionCollection.document(mission.id).set(mission).await()

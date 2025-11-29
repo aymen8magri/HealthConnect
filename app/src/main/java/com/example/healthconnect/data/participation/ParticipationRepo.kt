@@ -18,4 +18,6 @@ interface ParticipationRepository {
     suspend fun createParticipation(participation: Participation)
 
     suspend fun deleteParticipation(participationId: String)
+
+    suspend fun getParticipationsForUserInMission(userId: String, missionId: String): List<Participation>
 }

@@ -94,7 +94,14 @@ fun ViewProfileScreen(
 
         // Nom et email
         Text(
-            text = user.fullName,
+            text = user.fullName ,
+            fontSize = 24.sp,
+            style = MaterialTheme.typography.headlineSmall,
+            color = colorResource(R.color.blue_dark)
+        )
+
+        Text(
+            text = user.role.name ,
             fontSize = 24.sp,
             style = MaterialTheme.typography.headlineSmall,
             color = colorResource(R.color.blue_dark)
@@ -224,7 +231,8 @@ fun ViewProfileScreen(
         when (user.role) {
             Roles.COORDINATEUR -> {
                 Button(
-                    onClick = { navController.navigate("missions") },
+                    // Dans le Button "Mes missions"
+                    onClick = { navController.navigate("missions?showMyMissions=true") }, // <--- MODIFICATION
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),

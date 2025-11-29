@@ -18,5 +18,6 @@ data class Mission(
     var taskIds: List<String>? = null,
     var participantIds: List<String>? = null,
     var photoMission: String? = null,
-    var listTasks: List<String>? = null
+    var listTasks: List<Task> = emptyList(),
+    var coordinatorId: String? = null
 )
