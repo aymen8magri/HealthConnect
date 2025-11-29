@@ -36,7 +36,9 @@ import com.example.healthconnect.ui.admin.userList.UserListViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListView(
+
     navController: NavHostController,
+    missionId: String,
     viewModel: UserListViewModel = hiltViewModel(),
     onUserClick: (String) -> Unit
 ) {
@@ -45,6 +47,9 @@ fun UserListView(
     val roleFilter by viewModel.roleFilter.collectAsState()
     val statusFilter by viewModel.statusFilter.collectAsState()
 
+    LaunchedEffect(missionId) {
+        viewModel.loadData(missionId)
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -118,27 +123,62 @@ fun UserListView(
                     ),
                     modifier = Modifier.padding(start = 4.dp)
                 )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    item {
-                        CompactFilterChip(
-                            selected = roleFilter == null,
-                            onClick = { viewModel.onRoleFilterChange(null) },
-                            label = "Tous"
-                        )
+                if(viewModel.isAdmin){
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        item {
+                            CompactFilterChip(
+                                selected = roleFilter == null,
+                                onClick = { viewModel.onRoleFilterChange(null) },
+                                label = "Tous"
+                            )
+                        }
+                        items(Roles.entries.size) { idx ->
+                            CompactFilterChip(
+                                selected = roleFilter == Roles.entries[idx],
+                                onClick = { viewModel.onRoleFilterChange(Roles.entries[idx]) },
+                                label = when (Roles.entries[idx]) {
+                                    Roles.MEDECIN -> "Médecin"
+                                    Roles.COORDINATEUR -> "Coord."
+                                    Roles.VOLONTAIRE -> "Volontaire"
+                                    Roles.ADMIN -> "Admin"
+                                }
+                            )
+                        }
                     }
-                    items(Roles.entries.size) { idx ->
-                        CompactFilterChip(
-                            selected = roleFilter == Roles.entries[idx],
-                            onClick = { viewModel.onRoleFilterChange(Roles.entries[idx]) },
-                            label = when (Roles.entries[idx]) {
-                                Roles.MEDECIN -> "Médecin"
-                                Roles.COORDINATEUR -> "Coord."
-                                Roles.VOLONTAIRE -> "Volontaire"
-                                Roles.ADMIN -> "Admin"
-                            }
-                        )
-                    }
+
                 }
+                if(viewModel.isCoordinator){
+                // Choose which roles to show for this UI (admin vs coordinator logic should decide this list)
+                    val allowedRoles = listOf(Roles.MEDECIN, Roles.VOLONTAIRE)
+
+               // Map role -> label (no 'when' on the enum, so no exhaustiveness error)
+                    val roleLabels = mapOf(
+                        Roles.MEDECIN to "Médecin",
+                        Roles.VOLONTAIRE to "Volontaire",
+                        Roles.COORDINATEUR to "Coord.",
+                        Roles.ADMIN to "Admin"
+                    )
+
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        item {
+                            CompactFilterChip(
+                                selected = roleFilter == null,
+                                onClick = { viewModel.onRoleFilterChange(null) },
+                                label = "Tous"
+                            )
+                        }
+
+                        items(allowedRoles) { role ->
+                            CompactFilterChip(
+                                selected = roleFilter == role,
+                                onClick = { viewModel.onRoleFilterChange(role) },
+                                label = roleLabels[role] ?: role.name
+                            )
+                        }
+                    }
+
+                }
+
 
                 // Status filter chips (horizontal)
                 Text(

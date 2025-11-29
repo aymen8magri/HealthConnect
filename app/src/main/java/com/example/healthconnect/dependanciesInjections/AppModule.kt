@@ -8,6 +8,8 @@ import com.example.healthconnect.data.mission.MissionRepository
 import com.example.healthconnect.data.mission.MissionRepositoryImpl
 import com.example.healthconnect.data.admin.validateUsers.UserRepository
 import com.example.healthconnect.data.admin.validateUsers.UserRepositoryImpl
+import com.example.healthconnect.data.participation.ParticipationRepository
+import com.example.healthconnect.data.participation.ParticipationRepositoryImpl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -18,6 +20,12 @@ import dagger.hilt.components.SingletonComponent // <-- VÉRIFIEZ CET IMPORT
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideParticipationRepository(firestore: FirebaseFirestore): ParticipationRepository {
+        return ParticipationRepositoryImpl(firestore)
+    }
 
     // Fournit une instance de FirebaseAuth pour toute l'application
     @Provides

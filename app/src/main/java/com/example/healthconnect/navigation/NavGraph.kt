@@ -30,7 +30,7 @@ object AppRoutes {
     const val LOGIN = "login"
 
     // Admin routes
-    const val ADMIN_DASHBOARD = "admin_dashboard"
+    const val USER_LIST = "user_list/{missionId}"
     const val USER_DETAIL = "user_detail"
     const val ADD_MISSION = "add_mission"
 
@@ -79,7 +79,7 @@ fun NavGraph(
             // On récupère l'ID depuis les arguments de la navigation
             val missionId = backStackEntry.arguments?.getString("missionId")
             if (missionId != null) {
-                MissionDetailView(missionId = missionId, navController = navController)
+                MissionDetailView( missionId = missionId, navController = navController)
             }
         }
 
@@ -95,12 +95,20 @@ fun NavGraph(
         }
 
         // Admin dashboard -> liste des utilisateurs
-        composable(AppRoutes.ADMIN_DASHBOARD) {
-            // onUserClick navigue vers le détail en fournissant l'UID
-            UserListView(navController = navController) { userId ->
+        composable(
+            "${AppRoutes.USER_LIST}/{missionId}",
+            arguments = listOf(navArgument("missionId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val missionId = backStackEntry.arguments?.getString("missionId") ?: ""
+
+            UserListView(
+                navController = navController,
+                missionId = missionId
+            ) { userId ->
                 navController.navigate("${AppRoutes.USER_DETAIL}/$userId")
             }
         }
+
 
         // Route pour le détail d'un utilisateur
         composable(

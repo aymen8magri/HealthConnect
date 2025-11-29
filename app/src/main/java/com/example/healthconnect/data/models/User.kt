@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.Role
 import com.google.firebase.firestore.PropertyName
 import com.example.healthconnect.data.models.Roles
 import com.example.healthconnect.data.models.Specialite
+import com.google.firebase.firestore.DocumentId
 
 /**
  * Représente la structure de données d'un utilisateur dans la base de données Firestore.
@@ -11,6 +12,7 @@ import com.example.healthconnect.data.models.Specialite
  * un document en un objet de cette classe.
  */
 data class User(
+    @DocumentId
     val uid: String = "",
     val fullName: String = "",
     val email: String = "",
