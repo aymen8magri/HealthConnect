@@ -32,9 +32,9 @@ fun BottomNavBar(
             NavigationBarItem(
                 icon = { Icon(Icons.Default.Group, contentDescription = "Utilisateurs") },
                 label = { Text("Utilisateurs") },
-                selected = currentDestination?.route == AppRoutes.ADMIN_DASHBOARD,
+                selected = currentDestination?.route == AppRoutes.USER_LIST,
                 onClick = {
-                    navController.navigate(AppRoutes.ADMIN_DASHBOARD) {
+                    navController.navigate(AppRoutes.USER_LIST) {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
                         restoreState = true

@@ -30,6 +30,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.healthconnect.data.models.Mission
 import com.example.healthconnect.data.models.MissionStatus
+import com.example.healthconnect.navigation.AppRoutes
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,6 +47,7 @@ fun MissionDetailView(
     }
 
     val mission by viewModel.mission.collectAsState()
+    val isCurrentUserCoordinator by viewModel.isCurrentUserCoordinator.collectAsState()
 
     Scaffold(
         // Rendre la TopAppBar transparente pour un effet plus immersif
@@ -75,6 +77,22 @@ fun MissionDetailView(
             }
         }
     }
+    if (isCurrentUserCoordinator) {
+        Button(
+            onClick = {
+                navController.navigate("${AppRoutes.USER_LIST}/${mission?.id}")
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary
+            )
+        ) {
+            Text("Demandes de participations")
+        }
+    }
+
 }
 
 // --- Le contenu détaillé, entièrement redessiné ---

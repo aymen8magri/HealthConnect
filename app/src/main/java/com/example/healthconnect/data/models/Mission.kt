@@ -1,8 +1,10 @@
 package com.example.healthconnect.data.models
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentId
 
 data class Mission(
+    @DocumentId
     var id: String = "",  // <-- ID Firestore ajouté
     var title: String? = null,
     var description: String? = null,
