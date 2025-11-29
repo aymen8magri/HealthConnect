@@ -1,9 +1,13 @@
 package com.example.healthconnect.data.models
 
+import androidx.compose.runtime.DontMemoize
+import com.google.firebase.firestore.DocumentId
+
 /**
  * Représente une tâche appartenant à une mission.
  */
 data class Task(
+    @DocumentId
     val idTask: String = "",
     val missionId: String = "",
     val roleType: Roles = Roles.VOLONTAIRE,

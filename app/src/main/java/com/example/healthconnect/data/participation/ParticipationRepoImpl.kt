@@ -22,7 +22,7 @@ class ParticipationRepositoryImpl @Inject constructor(
             .whereEqualTo("missionId", missionId)
             .get()
             .await()
-            .toObjects(Participation::class.java)
+            .toObjects(Participation::class.java) // @DocumentId will inject document ID automatically
     }
 
     // ------------------------------
@@ -60,29 +60,22 @@ class ParticipationRepositoryImpl @Inject constructor(
     // Update participation
     // ------------------------------
     override suspend fun updateParticipation(participation: Participation) {
-        participationCollection
-            .document(participation.id)
-            .set(participation)
-            .await()
+        val docRef = if (participation.id.isBlank()) participationCollection.document() else participationCollection.document(participation.id)
+        docRef.set(participation).await()
     }
 
     // ------------------------------
     // Create participation
     // ------------------------------
     override suspend fun createParticipation(participation: Participation) {
-        participationCollection
-            .document(participation.id)
-            .set(participation)
-            .await()
+        val docRef = if (participation.id.isBlank()) participationCollection.document() else participationCollection.document(participation.id)
+        docRef.set(participation).await()
     }
 
     // ------------------------------
     // Delete participation
     // ------------------------------
     override suspend fun deleteParticipation(participationId: String) {
-        participationCollection
-            .document(participationId)
-            .delete()
-            .await()
+        participationCollection.document(participationId).delete().await()
     }
 }

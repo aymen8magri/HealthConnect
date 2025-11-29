@@ -1,11 +1,14 @@
 package com.example.healthconnect.data.models
 
+import com.google.firebase.firestore.DocumentId
+
 /**
  * Représente la participation d'un utilisateur à une mission (table de jointure many-to-many).
  * - validation : statut de validation de la participation
  * - assignedTaskIds : tâches assignées à ce participant pour cette mission
  */
 data class Participation(
+    @DocumentId
     val id: String = "",
     val missionId: String = "",
     val userId: String = "",

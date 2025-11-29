@@ -24,7 +24,8 @@ class UserRepositoryImpl @Inject constructor(
     // ---------------------------------------------------------
     override suspend fun getCurrentUser(): User? {
         val uid = auth.currentUser?.uid ?: return null
-        return userCollection.document(uid).get().await().toObject(User::class.java)
+        // @DocumentId automatically maps document ID to `uid` field
+        return userCollection.document(uid).get().await().toObject(User::class.java)?.copy(uid = uid)
     }
 
     // ---------------------------------------------------------
@@ -38,7 +39,7 @@ class UserRepositoryImpl @Inject constructor(
     //  Get User By ID
     // ---------------------------------------------------------
     override suspend fun getUserById(userId: String): User? {
-        return userCollection.document(userId).get().await().toObject(User::class.java)
+        return userCollection.document(userId).get().await().toObject(User::class.java)?.copy(uid = userId)
     }
 
     // ---------------------------------------------------------
@@ -47,7 +48,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun verifyUser(userId: String): Boolean {
         return try {
             userCollection.document(userId)
-                .update("statusRole", Status.VALIDATED)
+                .update("statusRole", Status.VALIDATED.name) // save enum as string
                 .await()
             true
         } catch (e: Exception) {
@@ -61,7 +62,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun rejectUser(userId: String): Boolean {
         return try {
             userCollection.document(userId)
-                .update("statusRole", Status.REJECTED)
+                .update("statusRole", Status.REJECTED.name) // save enum as string
                 .await()
             true
         } catch (e: Exception) {
@@ -74,6 +75,7 @@ class UserRepositoryImpl @Inject constructor(
     // ---------------------------------------------------------
     override suspend fun updateUser(updatedUser: User): Boolean {
         return try {
+            // Do not include UID in fields, Firestore already knows document ID
             userCollection.document(updatedUser.uid)
                 .set(updatedUser)
                 .await()
@@ -92,7 +94,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     // ---------------------------------------------------------
-    //  Check if a specific user is a VERIFIED doctor
+    //  Check if CURRENT user is VERIFIED doctor
     // ---------------------------------------------------------
     override suspend fun isCurrentUserDoctorVerified(): Boolean {
         val u = getCurrentUser() ?: return false
@@ -100,10 +102,10 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     // ---------------------------------------------------------
-    //  Check if a specific user is a VERIFIED coordinator
+    //  Check if CURRENT user is VERIFIED coordinator
     // ---------------------------------------------------------
     override suspend fun isCurrentUserCoordinatorVerified(): Boolean {
         val u = getCurrentUser() ?: return false
-       return u.role == Roles.COORDINATEUR && u.statusRole == Status.VALIDATED
+        return u.role == Roles.COORDINATEUR && u.statusRole == Status.VALIDATED
     }
 }
