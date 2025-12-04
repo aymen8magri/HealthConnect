@@ -62,7 +62,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun rejectUser(userId: String): Boolean {
         return try {
             userCollection.document(userId)
-                .update("statusRole", Status.REJECTED.name) // save enum as string
+                .update("statusRole", Status.REJECTED.name, "role", Roles.VOLONTAIRE) // save enum as string
                 .await()
             true
         } catch (e: Exception) {
